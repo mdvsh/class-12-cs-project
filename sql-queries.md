@@ -1,6 +1,6 @@
-##SQL Queries / Things to refer to
+## SQL Queries / Things to refer to
 
-####Inner Joins
+#### Inner Joins
 
 Selects records that have matching values in both tables
 
@@ -17,7 +17,7 @@ SELECT * FROM <table1_name>, <table2_name>
 WHERE <table1_name>.<column_name> = <table2_name>.<column_name>
 ```
 
-####Self Joins
+#### Self Joins
 
 Joins a table with itself
 
@@ -27,7 +27,7 @@ JOIN <table_name> b
 ON a.<column1_name> = b.<column2_name>
 ```
 
-####Joining Multiple Tables
+#### Joining Multiple Tables
 
 ```
 SELECT * FROM <table1_name> a
