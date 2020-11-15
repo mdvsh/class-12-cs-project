@@ -1,0 +1,5 @@
+.vscode
+credentials.json
+*.pickle
+.env
+app/.env
