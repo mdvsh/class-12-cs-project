@@ -13,6 +13,7 @@ def main():
             user=os.getenv('DATABASE_USERNAME'),
             password=os.getenv('DATABASE_PASSWORD'),
             port='3306',
+            database='db'
         )
         if db:
             print('Connection Successful...')
