@@ -7,11 +7,7 @@ from pyfiglet import Figlet
 import user
 
 def main():
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('-u', '--user', help='Type of user: (1) Counselor/Teacher (2) Student')
-    # args = parser.parse_args()
     load_dotenv(verbose=True)
-
     try:
         import colorama
         colorama.init()
@@ -44,17 +40,34 @@ def main():
         if db:
             cursor = db.cursor()
             cursor.execute('use {};'.format(os.getenv('DATABASE_NAME')))
-            console.print('Connection [green][b]successfull[/b][/green][blink]...[/blink]\n\nSetting up tables')
+            console.print('Connection [green][b]successfull[/b][/green][blink]...[/blink]\n\n :gear: Initialising Tables')
             # init and check for tables: user, counselor, teacher, sessions ...
             user.student_create_table(cursor)
-
-            
+            # admin.admin_create_table(cursor)
+            console.print('🔐 Login as ? \n (1) Counselor / Teacher \n (2) Student')
+            login = False
+            while not login:
+                inp = str(input('Please enter number to login as: '))
+                if inp == '1':
+                    console.print('Enter the [b]Admin Credentials [/b]')
+                elif inp == '2':
+                    console.print('Enter your admission number and password to login...')
+                    # user.student_create_prompt()
+                    admmno = str(input(':school: Enter your admission number: '))
+                    console.print('🔎 Searching for existing record in the database...')
+                    if user.exists(admmno):
+                        # ask for password, unhash and confirm login = True
+                        pass
+                    else:
+                        # create new user, ask for password, ask for details then show table to confirm reg and login = True
+                        pass
+                else:
+                    console.print('⚠️  Something went wrong... Please try again.')
     except:
-        console.print('There was some error connecting to the database.\n\n[bold red]Please make sure the database exists.[/bold red]')
+        console.print('There was some error connecting to the database.\n\n[bold red]⚠️  Something went wrong... Please try again.[/bold red]')
         exit
 
-    # login inquirer
-
+    # prompt starts now
 
 if __name__ == '__main__':
     main()
