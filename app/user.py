@@ -21,7 +21,13 @@ def student_create_table(cursor):
         log_file.write(to_print+'\n')
 
 def exists(cursor, admmno):
-    exists = True if cursor.execute("select * from students where AdmnNO = '{}';".format(admmno)) else False
+    global exists
+    exists = False
+    cursor.execute("select * from students where AdmnNO='{}';".format(admmno))
+    output = cursor.fetchone()
+    # print(output)
+    if output != None:
+        exists = True
     return exists
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
@@ -57,7 +63,7 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     query = "insert into students values ('{}', '{}', '{}', '{}', '{}');".format(admnno, answers['full_name'], answers['clsec'], answers['stream'], pswd_hash)
 
     table.add_column("Admn. No.")
-    table.add_column("Student Name", width=10)
+    table.add_column("Student Name", width=18)
     table.add_column("Class/Section", justify='center')
     table.add_column("Stream", justify='center')
     table.add_column("Additional Info.", justify='left')

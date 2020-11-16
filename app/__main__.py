@@ -57,6 +57,8 @@ def main():
                 if user.exists(cursor, admmno):
                     # ask for password, unhash and confirm login = True
                     print('exists bhai')
+                    # aayega yahan par login code done hai forgot to test at 1:15 AM
+                    login = True
                 else:
                     # create new user, ask for password, ask for details then show table to confirm reg and login = True
                     console.print(':pensive: Record not found.\n\n')
