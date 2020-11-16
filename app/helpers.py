@@ -15,8 +15,8 @@ def help_counselor():
     console.print(table)
 
 
-def help_student():
-    table = Table(title="Help", border_style="red")
+def help_student(title):
+    table = Table(title=title, border_style="red")
 
     table.add_column("Name of command", justify="left", style="cyan", no_wrap=True)
     table.add_column("Usage", justify="left", style="yellow bold italic", no_wrap=True)

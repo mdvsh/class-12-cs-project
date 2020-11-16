@@ -2,6 +2,7 @@
 
 import os, rich
 from PyInquirer import prompt
+import mysql.connector as mysql
 
 def student_create_table(cursor):
     console = rich.console.Console()
@@ -20,15 +21,14 @@ def student_create_table(cursor):
         log_file.write(to_print+'\n')
 
 def exists(cursor, admmno):
-    try:
-        cursor.execute('select * from students where AdmnNO = {};'.format(admmno.upper()))
-        return True
-    except Exception:
-        return False
+    exists = True if cursor.execute("select * from students where AdmnNO = '{}';".format(admmno)) else False
+    return exists
 
-def student_create_prompt(cursor, admnno, pswd_hash):
+def student_create_prompt(db, cursor, admnno, pswd_hash):
+    admnno = admnno.upper()
     console = rich.console.Console()
-    console.print('🆕 [b green] New Student Registration Form [/b green]\n')
+    table = rich.table.Table(show_header=True, header_style="bold magenta", show_footer=False)
+    console.print('🆕 [bold green] New Student Registration Form [/bold green]\n')
     questions = [
         {
             'type': 'input',
@@ -52,4 +52,52 @@ def student_create_prompt(cursor, admnno, pswd_hash):
     if answers['stream'] == 'OTHER':
         other_stream = str(input('Enter other stream (5 letters): '))
         answers['stream'] = other_stream
-    print(admnno, pswd_hash, answers)
+
+    # print(admnno, pswd_hash, answers)
+    query = "insert into students values ('{}', '{}', '{}', '{}', '{}');".format(admnno, answers['full_name'], answers['clsec'], answers['stream'], pswd_hash)
+
+    table.add_column("Admn. No.")
+    table.add_column("Student Name", width=10)
+    table.add_column("Class/Section", justify='center')
+    table.add_column("Stream", justify='center')
+    table.add_column("Additional Info.", justify='left')
+    table.add_row(
+        f'[bold]{admnno}[/]',
+        f'{answers["full_name"]}',
+        f'{answers["clsec"]}',
+        f'{answers["stream"]}',
+        "Your password is hashed securely with bcrypt."
+    )
+
+    console.print("\n\n[yellow]Here's what we got from you[/]\n", table)
+
+    # inquirer to confrim user details before adding
+    confirm = [
+        {'type': 'confirm', 'message': 'Are all the details correct?', 'name': 'verify', 'default': True},
+        {'type': 'confirm', 'message': 'Finish registration?', 'name': 'finish', 'default': True}
+    ]
+
+    confirmation = prompt(confirm)
+
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = 'bruh'
+    global ok
+    ok = False
+
+    if confirmation['verify'] and confirmation['finish']:
+        try:
+            cursor.execute(query)
+            to_print = '[INSERT] NEW ROW STUDENT'
+            db.commit()
+            ok = True
+        except mysql.Error as e:
+            console.print('⚠️ Something Went Wrong :-(')
+            to_print = f'[DB ERROR]: INSERTING\nMessage: {e}'
+    else:
+       console.print('[blink][i]Oopsie wOOpsiee...[/i]\n\nOur code :monkey:s are trying to figure out what went wrong ...[/blink]')
+
+    with open(LOG_PATH, 'a') as log_file:
+        log_file.write(to_print+'\n')
+    
+    return ok

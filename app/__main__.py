@@ -1,11 +1,12 @@
-import argparse, os, rich, bcrypt
+import os, bcrypt, sys
 from dotenv import load_dotenv
 import mysql.connector as mysql
 from rich.console import Console
 from rich.text import Text
 from pyfiglet import Figlet
 import user
-from getpass import getpass, getuser
+from getpass import getpass
+
 def main():
     load_dotenv(verbose=True)
     try:
@@ -29,7 +30,6 @@ def main():
 
     ps = 3306 if os.name == 'nt' else '3306'
 
-    
     db = mysql.connect(
         host='localhost',
         user=os.getenv('DATABASE_USERNAME'),
@@ -38,42 +38,47 @@ def main():
         database=os.getenv('DATABASE_NAME')
     )
     if db:
-        cursor = db.cursor()
+        cursor = db.cursor(buffered=True)
         cursor.execute('use {};'.format(os.getenv('DATABASE_NAME')))
-        console.print('Connection [green][b]successfull[/b][/green][blink]...[/blink]\n\n :gear: Initialising Tables')
+        console.print('Connection [green][b]successfull[/b][/green][blink]...[/blink]\n\n :gear: Initialising Tables\n\n')
         # init and check for tables: user, counselor, teacher, sessions ...
         user.student_create_table(cursor)
         # admin.admin_create_table(cursor)
-        console.print('🔐 Login as ? \n (1) Counselor / Teacher \n (2) Student')
         login = False
         while not login:
-            inp = str(input('Please enter number to login as: '))
+            console.print('🔐 Login as ? \n\n (1) Counselor / Teacher \n (2) Student')
+            inp = str(input('\n\nPlease enter number to login as: '))
             if inp == '1':
                 console.print('Enter the [b]Admin Credentials [/b]')
             elif inp == '2':
+                global admmno
                 admmno = str(input('Enter your admission number: '))
                 console.print('🔎 Searching for existing record in the database...')
                 if user.exists(cursor, admmno):
                     # ask for password, unhash and confirm login = True
-                    pass
+                    print('exists bhai')
                 else:
                     # create new user, ask for password, ask for details then show table to confirm reg and login = True
-                    console.print(':pensive: Record not found.')
+                    console.print(':pensive: Record not found.\n\n')
                     new = str(input('Would you like to create an account [y/n] ? '))
                     if new[0] == 'n':
                         console.print("Uh-oh! Thank you for using IntlApp Dashboard.\n\n[i]Exiting...[/i]")
                         exit()
                     else:
                         console.print('🙈 [i green]We do not store your passwords.[/i green]')
-                        admnno = str(input('Enter Admission Number: '))
-                        password = getpass(prompt='Enter password: ')
+                        # admnno = str(input('Enter Admission Number: '))
+                        password = getpass(prompt='Enter a new password: ')
                         password = password.encode('ascii')
                         hsh = bcrypt.hashpw(password, os.getenv('BCRYPT_SALT').encode('ascii'))
                         # send admnno and pswd hash to creation function
-                        user.student_create_prompt(cursor, admnno, hsh.decode('ascii'))
-                        print('todo...')
+                        ok = user.student_create_prompt(db, cursor, admmno.upper(), hsh.decode('ascii'))
+                        if ok:
+                            login = True
+                            print('todo...')
             else:
                 print('catch something maybe')
+        if login:
+            console.print('✅ Login Successful')
     else:
         console.print('⚠️  Something went wrong... Please try again.')
     # except:
@@ -83,4 +88,12 @@ def main():
     # prompt starts now
 
 if __name__ == '__main__':
-    main()
+    console = Console()
+    try:
+        main()
+    except KeyboardInterrupt:
+        console.print('\n\n\n[bold red]Exiting gracefully...[/]')
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
