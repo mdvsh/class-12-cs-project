@@ -10,13 +10,46 @@ def student_create_table(cursor):
     query = "create table if not exists students(AdmnNO char(6) NOT NULL, Name varchar(255) NOT NULL, Class char(3) NOT NULL, Stream varchar(5) NOT NULL, PSWDHASH CHAR(60) NOT NULL, PRIMARY KEY (AdmnNO));"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = 'bruh'
+    to_print = '[ERROR]: COULD NOT CREATE STUDENT TABLE'
     try:
         cursor.execute(query)
         to_print = '[CREATE] TABLE STUDENT'
     except Exception:
         console.print(':bulb: Existing student table found ')
         to_print = '[DB ERROR]: EXISTING TABLE FOUND'
+
+    with open(LOG_PATH, 'a') as log_file:
+        log_file.write(to_print+'\n')
+
+def college_create_table(cursor):
+    console = rich.console.Console()
+    query = "create table if not exists colleges(CollegeID int not null auto_increment, Name varchar(255), primary key (CollegeID));"
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = '[ERROR]: COULD NOT CREATE COLLEGE TABLE'
+    try:
+        cursor.execute(query)
+        to_print = '[CREATE] TABLE COLLEGE'
+    except Exception:
+        console.print(':bulb: Existing college table found ')
+        to_print = '[DB ERROR]: EXISTING TABLE FOUND'
+
+    with open(LOG_PATH, 'a') as log_file:
+        log_file.write(to_print+'\n')
+
+def add_college(db, cursor, name):
+    console = rich.console.Console()
+    query = "insert into colleges(Name) values('{}');".format(name)
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = '[ERROR]: COULD NOT CREATE COLLEGE TABLE'
+    try:
+        cursor.execute(query)
+        to_print = '[INSERT] NEW ROW COLLEGE'
+        db.commit()
+    except mysql.Error as e:
+        console.print('⚠️ Something Went Wrong :-(')
+        to_print = f'[DB ERROR]: INSERTING\nMessage: {e}'
 
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
@@ -40,6 +73,28 @@ def get_pswdhash(cursor, admnno):
     output = cursor.fetchone()
     return output[0].encode('ascii')
 
+def login_display_student(db, cursor, admno):
+    admnno = admno.upper()
+    console = rich.console.Console()
+    table = rich.table.Table(
+    show_header=True, header_style="bold magenta", show_footer=False)
+
+    cursor.execute("select * from students where AdmnNO='{}';".format(admno))
+    output = cursor.fetchone()
+    table.add_column("Admn. No.")
+    table.add_column("Student Name", width=18)
+    table.add_column("Class/Section", justify='center')
+    table.add_column("Stream", justify='center')
+    table.add_column("Additional Info.", justify='left')
+    table.add_row(
+        f'[bold]{admnno}[/]',
+        f'{output[1].title()}',
+        f'{output[2]}',
+        f'{output[3]}',
+        "Your password is securely hashed for verification."
+    )
+
+    console.print("\n\n[yellow]Here's what we got from you[/]\n", table)
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
     admnno = admnno.upper()
@@ -120,28 +175,36 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     college_list = []
     for c in canswers['colleges']:
         if c != 'Add it below!':
-            college_list.append(c)
+            cd = {}
+            cd['ND'] = c
+            college_list.append(cd)
     try:
-        college_list.append(canswers['new_college'].title())
+        s = canswers['deadline']
+        cd = {}
+        cd[s[s.find("(")+1:s.find(")")]] = canswers['new_college'].title()
+        college_list.append(cd)
     except KeyError:
         pass
-    print(college_list)
-    # print(answers)
 
-    query = "insert into students values ('{}', '{}', '{}', '{}', '{}');".format(
-        admnno, answers['full_name'], answers['clsec'], answers['stream'], pswd_hash)
+    watchlist = ""
+    for coll in college_list:
+        for k, v in coll.items():
+            watchlist += "[bold green]{}[/] : {}\n".format(k, v)
+            
+    new_user_query = "insert into students values ('{}', '{}', '{}', '{}', '{}');".format(
+        admnno, answers['full_name'].title(), answers['clsec'], answers['stream'], pswd_hash)
 
     table.add_column("Admn. No.")
     table.add_column("Student Name", width=18)
     table.add_column("Class/Section", justify='center')
     table.add_column("Stream", justify='center')
-    table.add_column("Additional Info.", justify='left')
+    table.add_column("Watchlist (Deadline / Name)", justify='left')
     table.add_row(
         f'[bold]{admnno}[/]',
-        f'{answers["full_name"]}',
+        f'{answers["full_name"].title()}',
         f'{answers["clsec"]}',
         f'{answers["stream"]}',
-        "Your password is hashed securely with bcrypt."
+        f'{watchlist}'
     )
 
     console.print("\n\n[yellow]Here's what we got from you[/]\n", table)
@@ -159,15 +222,19 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
     to_print = '[ERROR]: COULD NOT INSERT ROW'
-    global ok
-    ok = False
+    global ok_student
+    ok_student = 'not-ok'
+
+    for c in college_list:
+        name = list(c.values())[0]
+        add_college(db, cursor, name)
 
     if confirmation['verify'] and confirmation['finish']:
         try:
-            cursor.execute(query)
+            cursor.execute(new_user_query)
             to_print = '[INSERT] NEW ROW STUDENT'
             db.commit()
-            ok = True
+            ok_student = 'ok'
         except mysql.Error as e:
             console.print('⚠️ Something Went Wrong :-(')
             to_print = f'[DB ERROR]: INSERTING\nMessage: {e}'
@@ -178,4 +245,4 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
-    return ok
+    return ok_student
