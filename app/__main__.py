@@ -54,9 +54,15 @@ def main():
                 console.print('Enter the [b]Admin Credentials [/b]')
             elif inp == '2':
                 global admnno
+                global exists
                 admnno = str(input('Enter your admission number: '))
                 console.print('🔎 Searching for existing record in the database...')
-                exists = user.exists(cursor, admnno)
+                exists = False
+                cursor.execute("select * from students where AdmnNO='{}';".format(admnno))
+                output = cursor.fetchone()
+                # print(output)
+                if output != None:
+                    exists = True                
                 if exists:
                     # ask for password, unhash and confirm login = True
                     console.print(':+1: Existing Record found.\n\n[u green] Login to your account[/u green]\n')
@@ -90,6 +96,8 @@ def main():
                         if ok:
                             login = True
                             print('todo...')
+                        else:
+                            break
             else:
                 print('catch something maybe')
         if login:

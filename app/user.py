@@ -21,7 +21,7 @@ def student_create_table(cursor):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
-
+# archived (not recommended for use in production)
 def exists(cursor, admmno):
     global exists
     exists = False
@@ -111,7 +111,7 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
             'type': 'list',
             'name': 'deadline',
             'message': 'What\'s your college applcation deadline',
-            'choices': ['Early Application', 'UCs (End of November)', 'Regular (Dec - Jan)', 'Not Decided'],
+            'choices': ['November first-week (US_EARLY1)', 'Mid-November (UK/US_EARLY2)', 'November End (US_UCs)', 'January first-week (UK/US_REGULAR)', 'Not decided (ND)'],
             'when': lambda answers: answers['add_new']
         }
     ]
@@ -158,7 +158,7 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
 
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = 'bruh'
+    to_print = '[ERROR]: COULD NOT INSERT ROW'
     global ok
     ok = False
 
