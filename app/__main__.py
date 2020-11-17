@@ -55,7 +55,8 @@ def main():
                 global admnno
                 admnno = str(input('Enter your admission number: '))
                 console.print('🔎 Searching for existing record in the database...')
-                if user.exists(cursor, admnno):
+                exists = user.exists(cursor, admnno)
+                if exists:
                     # ask for password, unhash and confirm login = True
                     console.print(':+1: Existing Record found.\n[bold green] Login to your account[/bold green]\n\n')
                     password = getpass(prompt='Enter your password: ')
