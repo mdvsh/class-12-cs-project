@@ -7,6 +7,7 @@ from pyfiglet import Figlet
 import user
 from getpass import getpass
 import helpers
+from PyInquirer import prompt
 
 def main():
     load_dotenv(verbose=True)
@@ -58,7 +59,7 @@ def main():
                 exists = user.exists(cursor, admnno)
                 if exists:
                     # ask for password, unhash and confirm login = True
-                    console.print(':+1: Existing Record found.\n[bold green] Login to your account[/bold green]\n\n')
+                    console.print(':+1: Existing Record found.\n\n[u green] Login to your account[/u green]\n')
                     password = getpass(prompt='Enter your password: ')
                     password = password.encode('ascii')
                     pswd_hash = user.get_pswdhash(cursor, admnno)
@@ -70,8 +71,12 @@ def main():
                 else:
                     # create new user, ask for password, ask for details then show table to confirm reg and login = True
                     console.print(':pensive: Record not found.\n\n')
-                    new = str(input('Would you like to create an account [y/n] ? '))
-                    if new[0] == 'n':
+                    confirm = [
+                        {'type': 'confirm', 'message': 'Would you like to create a new account',
+                            'name': 'verify', 'default': True},
+                    ]
+                    answers = prompt(confirm)
+                    if not answers['verify']:
                         console.print("Uh-oh! Thank you for using IntlApp Dashboard.\n\n[i]Exiting...[/i]")
                         exit()
                     else:
@@ -101,7 +106,7 @@ if __name__ == '__main__':
     console = Console()
     try:
         main()
-    except KeyboardInterrupt or EOFError:
+    except (KeyboardInterrupt, EOFError):
         console.print('\n\n\n[bold red]Exiting gracefully...[/]')
         try:
             sys.exit(0)

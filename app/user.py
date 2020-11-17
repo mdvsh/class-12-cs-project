@@ -1,7 +1,8 @@
 # user.py: user logging, creation, edits, delete
 
-import os, rich
-from PyInquirer import prompt
+import os
+import rich
+from PyInquirer import prompt, Separator
 import mysql.connector as mysql
 
 def student_create_table(cursor):
@@ -20,27 +21,33 @@ def student_create_table(cursor):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
-def exists(cursor, admnno):
+
+def exists(cursor, admmno):
     global exists
     exists = False
-    cursor.execute("select * from students where AdmnNO='{}';".format(admnno))
+    cursor.execute("select * from students where AdmnNO='{}';".format(admmno))
     output = cursor.fetchone()
     # print(output)
     if output != None:
         exists = True
     return exists
 
+
 def get_pswdhash(cursor, admnno):
     admnno = admnno.upper()
-    cursor.execute("select PSWDHASH from students where AdmnNO='{}';".format(admnno))
+    cursor.execute(
+        "select PSWDHASH from students where AdmnNO='{}';".format(admnno))
     output = cursor.fetchone()
     return output[0].encode('ascii')
+
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
     admnno = admnno.upper()
     console = rich.console.Console()
-    table = rich.table.Table(show_header=True, header_style="bold magenta", show_footer=False)
-    console.print('🆕 [bold green] New Student Registration Form [/bold green]\n')
+    table = rich.table.Table(
+        show_header=True, header_style="bold magenta", show_footer=False)
+    console.print(
+        '🆕 [bold green] New Student Registration Form [/bold green]\n')
     questions = [
         {
             'type': 'input',
@@ -64,9 +71,65 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     if answers['stream'] == 'OTHER':
         other_stream = str(input('Enter other stream (5 letters): '))
         answers['stream'] = other_stream
+    # college prompt
+    college_questions = [
+        {
+            'type': 'checkbox',
+            'qmark': '🎓',
+            'message': 'Select or Add Colleges to your Watchlist',
+            'name': 'colleges',
+            'choices': [
+                Separator('== Colleges (Already in Database) =='),
+                # fill existing colleges by scraping from college table later...
+                # think of a way to get deadline - regular/early information through prompt as well
+                {
+                    'name': 'Placeholder College #1',
+                    'checked': True
+                },
+                {
+                    'name': 'Placeholder College #2'
+                },
+                Separator('== College not found? =='),
+                {
+                    'name': 'Add it below!'
+                }
+            ]
+        },
+        {
+            'type': 'confirm',
+            'name': 'add_new',
+            'message': 'Add a new college to your Watchlist?',
+            'default': True
+        },
+        {
+            'type': 'input',
+            'name': 'new_college',
+            'message': 'What\'s your college/university name',
+            'when': lambda answers: answers['add_new']
+        },
+        {
+            'type': 'list',
+            'name': 'deadline',
+            'message': 'What\'s your college applcation deadline',
+            'choices': ['Early Application', 'UCs (End of November)', 'Regular (Dec - Jan)', 'Not Decided'],
+            'when': lambda answers: answers['add_new']
+        }
+    ]
 
-    # print(admnno, pswd_hash, answers)
-    query = "insert into students values ('{}', '{}', '{}', '{}', '{}');".format(admnno, answers['full_name'], answers['clsec'], answers['stream'], pswd_hash)
+    canswers = prompt(college_questions)
+    college_list = []
+    for c in canswers['colleges']:
+        if c != 'Add it below!':
+            college_list.append(c)
+    try:
+        college_list.append(canswers['new_college'].title())
+    except KeyError:
+        pass
+    print(college_list)
+    # print(answers)
+
+    query = "insert into students values ('{}', '{}', '{}', '{}', '{}');".format(
+        admnno, answers['full_name'], answers['clsec'], answers['stream'], pswd_hash)
 
     table.add_column("Admn. No.")
     table.add_column("Student Name", width=18)
@@ -85,8 +148,10 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
 
     # inquirer to confrim user details before adding
     confirm = [
-        {'type': 'confirm', 'message': 'Are all the details correct?', 'name': 'verify', 'default': True},
-        {'type': 'confirm', 'message': 'Finish registration?', 'name': 'finish', 'default': True}
+        {'type': 'confirm', 'message': 'Are all the details correct?',
+            'name': 'verify', 'default': True},
+        {'type': 'confirm', 'message': 'Finish registration?',
+            'name': 'finish', 'default': True}
     ]
 
     confirmation = prompt(confirm)
@@ -107,9 +172,10 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
             console.print('⚠️ Something Went Wrong :-(')
             to_print = f'[DB ERROR]: INSERTING\nMessage: {e}'
     else:
-       console.print('[blink][i]Oopsie wOOpsiee...[/i]\n\nOur code :monkey:s are trying to figure out what went wrong ...[/blink]')
+        console.print(
+            '[blink][i]Oopsie wOOpsiee...[/i]\n\nOur code :monkey:s are trying to figure out what went wrong ...[/blink]')
 
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
-    
+
     return ok
