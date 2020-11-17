@@ -4,6 +4,8 @@ import os
 import rich
 from PyInquirer import prompt, Separator
 import mysql.connector as mysql
+import prompts
+
 
 def student_create_table(cursor):
     console = rich.console.Console()
@@ -21,9 +23,10 @@ def student_create_table(cursor):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
+
 def college_create_table(cursor):
     console = rich.console.Console()
-    query = "create table if not exists colleges(CollegeID int not null auto_increment, Name varchar(255), primary key (CollegeID));"
+    query = "create table if not exists colleges(CollegeID int not null auto_increment, CollegeName varchar(255) not null unique, primary key (CollegeID));"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
     to_print = '[ERROR]: COULD NOT CREATE COLLEGE TABLE'
@@ -37,6 +40,7 @@ def college_create_table(cursor):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
+
 def add_college(db, cursor, name):
     console = rich.console.Console()
     query = "insert into colleges(Name) values('{}');".format(name)
@@ -47,6 +51,7 @@ def add_college(db, cursor, name):
         cursor.execute(query)
         to_print = '[INSERT] NEW ROW COLLEGE'
         db.commit()
+    # add handling if college already exists
     except mysql.Error as e:
         console.print('⚠️ Something Went Wrong :-(')
         to_print = f'[DB ERROR]: INSERTING\nMessage: {e}'
@@ -54,7 +59,20 @@ def add_college(db, cursor, name):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
+
+def get_existing_colleges(cursor):
+    existing_choices = [
+        Separator('== Colleges (Already in Database) =='),
+    ]
+    cursor.execute("select Name from colleges;")
+    output = cursor.fetchall()
+    for college_t in output:
+        existing_choices.append({'name': college_t[0]})
+    return existing_choices
+
 # archived (not recommended for use in production)
+
+
 def exists(cursor, admmno):
     global exists
     exists = False
@@ -73,11 +91,12 @@ def get_pswdhash(cursor, admnno):
     output = cursor.fetchone()
     return output[0].encode('ascii')
 
+
 def login_display_student(db, cursor, admno):
     admnno = admno.upper()
     console = rich.console.Console()
     table = rich.table.Table(
-    show_header=True, header_style="bold magenta", show_footer=False)
+        show_header=True, header_style="bold magenta", show_footer=False)
 
     cursor.execute("select * from students where AdmnNO='{}';".format(admno))
     output = cursor.fetchone()
@@ -96,6 +115,7 @@ def login_display_student(db, cursor, admno):
 
     console.print("\n\n[yellow]Here's what we got from you[/]\n", table)
 
+
 def student_create_prompt(db, cursor, admnno, pswd_hash):
     admnno = admnno.upper()
     console = rich.console.Console()
@@ -103,76 +123,29 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
         show_header=True, header_style="bold magenta", show_footer=False)
     console.print(
         '🆕 [bold green] New Student Registration Form [/bold green]\n')
-    questions = [
-        {
-            'type': 'input',
-            'name': 'full_name',
-            'message': 'What\'s your name',
-        },
-        {
-            'type': 'input',
-            'name': 'clsec',
-            'message': 'What\'s your class and section',
-            'default': '12I'
-        },
-        {
-            'type': 'list',
-            'name': 'stream',
-            'message': 'What\'s your stream ?',
-            'choices': ['PCB', 'PCMC', 'PCMB', 'PCME', 'COMM.', 'HUMA.', 'OTHER'],
-        },
-    ]
+
+    existing_choices = get_existing_colleges(cursor)
+
+    college_prompt = {
+        'type': 'checkbox',
+        'qmark': '🎓',
+        'message': 'Select or Add Colleges to your Watchlist',
+        'name': 'colleges',
+        'choices': existing_choices
+    }
+
+    questions = prompts.get_student_questions()
     answers = prompt(questions)
     if answers['stream'] == 'OTHER':
         other_stream = str(input('Enter other stream (5 letters): '))
         answers['stream'] = other_stream
     # college prompt
-    college_questions = [
-        {
-            'type': 'checkbox',
-            'qmark': '🎓',
-            'message': 'Select or Add Colleges to your Watchlist',
-            'name': 'colleges',
-            'choices': [
-                Separator('== Colleges (Already in Database) =='),
-                # fill existing colleges by scraping from college table later...
-                # think of a way to get deadline - regular/early information through prompt as well
-                {
-                    'name': 'Placeholder College #1',
-                    'checked': True
-                },
-                {
-                    'name': 'Placeholder College #2'
-                },
-                Separator('== College not found? =='),
-                {
-                    'name': 'Add it below!'
-                }
-            ]
-        },
-        {
-            'type': 'confirm',
-            'name': 'add_new',
-            'message': 'Add a new college to your Watchlist?',
-            'default': True
-        },
-        {
-            'type': 'input',
-            'name': 'new_college',
-            'message': 'What\'s your college/university name',
-            'when': lambda answers: answers['add_new']
-        },
-        {
-            'type': 'list',
-            'name': 'deadline',
-            'message': 'What\'s your college applcation deadline',
-            'choices': ['November first-week (US_EARLY1)', 'Mid-November (UK/US_EARLY2)', 'November End (US_UCs)', 'January first-week (UK/US_REGULAR)', 'Not decided (ND)'],
-            'when': lambda answers: answers['add_new']
-        }
-    ]
 
+    college_questions = prompts.get_college_questions()
+    college_questions.insert(0, college_prompt)
     canswers = prompt(college_questions)
     college_list = []
+    college_toadd_list = []
     for c in canswers['colleges']:
         if c != 'Add it below!':
             cd = {}
@@ -183,6 +156,7 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
         cd = {}
         cd[s[s.find("(")+1:s.find(")")]] = canswers['new_college'].title()
         college_list.append(cd)
+        college_toadd_list.append(cd)
     except KeyError:
         pass
 
@@ -190,7 +164,7 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     for coll in college_list:
         for k, v in coll.items():
             watchlist += "[bold green]{}[/] : {}\n".format(k, v)
-            
+
     new_user_query = "insert into students values ('{}', '{}', '{}', '{}', '{}');".format(
         admnno, answers['full_name'].title(), answers['clsec'], answers['stream'], pswd_hash)
 
@@ -225,7 +199,7 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     global ok_student
     ok_student = 'not-ok'
 
-    for c in college_list:
+    for c in college_toadd_list:
         name = list(c.values())[0]
         add_college(db, cursor, name)
 
