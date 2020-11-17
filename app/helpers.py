@@ -26,3 +26,24 @@ def help_student(title):
 
     console = Console()
     console.print(table)
+
+
+def check_table_exists(table_name):
+    db = mysql.connect(
+        host='localhost',
+        user=os.getenv('DATABASE_USERNAME'),
+        password=os.getenv('DATABASE_PASSWORD'),
+        port='3306',
+        database=os.getenv('DATABASE_NAME')
+    )
+
+    cur = db.cursor()
+    try:
+        cur.execute("SHOW TABLES")
+        if (table_name,) in cur.fetchall():
+            print("Loading Table...")
+            return True
+        else:
+            return False
+    except:
+        print("Some Error occurred.")

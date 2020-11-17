@@ -6,6 +6,7 @@ from rich.text import Text
 from pyfiglet import Figlet
 import user
 from getpass import getpass
+import helpers
 
 def main():
     load_dotenv(verbose=True)
@@ -51,15 +52,15 @@ def main():
             if inp == '1':
                 console.print('Enter the [b]Admin Credentials [/b]')
             elif inp == '2':
-                global admno
-                admno = str(input('Enter your admission number: '))
+                global admnno
+                admnno = str(input('Enter your admission number: '))
                 console.print('🔎 Searching for existing record in the database...')
-                if user.exists(cursor, admno):
+                if user.exists(cursor, admnno):
                     # ask for password, unhash and confirm login = True
                     console.print(':+1: Existing Record found.\n[bold green] Login to your account[/bold green]\n\n')
                     password = getpass(prompt='Enter your password: ')
                     password = password.encode('ascii')
-                    pswd_hash = user.get_pswdhash(cursor, admno)
+                    pswd_hash = user.get_pswdhash(cursor, admnno)
                     if bcrypt.checkpw(password, pswd_hash):
                         login = True
                         console.print('\n[u green]Password verified.[/u green]\n\n')
@@ -79,7 +80,7 @@ def main():
                         password = password.encode('ascii')
                         hsh = bcrypt.hashpw(password, os.getenv('BCRYPT_SALT').encode('ascii'))
                         # send admnno and pswd hash to creation function
-                        ok = user.student_create_prompt(db, cursor, admno.upper(), hsh.decode('ascii'))
+                        ok = user.student_create_prompt(db, cursor, admnno.upper(), hsh.decode('ascii'))
                         if ok:
                             login = True
                             print('todo...')

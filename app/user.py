@@ -20,10 +20,10 @@ def student_create_table(cursor):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
-def exists(cursor, admmno):
+def exists(cursor, admnno):
     global exists
     exists = False
-    cursor.execute("select * from students where AdmnNO='{}';".format(admmno))
+    cursor.execute("select * from students where AdmnNO='{}';".format(admnno))
     output = cursor.fetchone()
     # print(output)
     if output != None:
