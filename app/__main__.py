@@ -56,9 +56,15 @@ def main():
                 console.print('🔎 Searching for existing record in the database...')
                 if user.exists(cursor, admmno):
                     # ask for password, unhash and confirm login = True
-                    print('exists bhai')
-                    # aayega yahan par login code done hai forgot to test at 1:15 AM
-                    login = True
+                    console.print(':+1: Existing Record found.\n[bold green] Login to your account[/bold green]\n\n')
+                    password = getpass(prompt='Enter your password: ')
+                    password = password.encode('ascii')
+                    pswd_hash = user.get_pswdhash(cursor, admmno)
+                    if bcrypt.checkpw(password, pswd_hash):
+                        login = True
+                        console.print('\n[u green]Password verified.[/u green]\n\n')
+                    else:
+                        console.print('\n[u]Password [red]not verified.[/red][/u]\n\n')
                 else:
                     # create new user, ask for password, ask for details then show table to confirm reg and login = True
                     console.print(':pensive: Record not found.\n\n')
@@ -93,7 +99,7 @@ if __name__ == '__main__':
     console = Console()
     try:
         main()
-    except KeyboardInterrupt:
+    except KeyboardInterrupt or EOFError:
         console.print('\n\n\n[bold red]Exiting gracefully...[/]')
         try:
             sys.exit(0)

@@ -30,6 +30,12 @@ def exists(cursor, admmno):
         exists = True
     return exists
 
+def get_pswdhash(cursor, admnno):
+    admnno = admnno.upper()
+    cursor.execute("select PSWDHASH from students where AdmnNO='{}';".format(admnno))
+    output = cursor.fetchone()
+    return output[0].encode('ascii')
+
 def student_create_prompt(db, cursor, admnno, pswd_hash):
     admnno = admnno.upper()
     console = rich.console.Console()
