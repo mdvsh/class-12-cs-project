@@ -5,7 +5,7 @@ with open('README.md', 'r') as fh:
 
 setup(name='app',
       version='0.0.0',
-      author='Madhav and',
+      author='Madhav and Mehar',
       description='A Terminal User Interface wrapped around an International Admissions Dashboard for Counselor/Teachers/Students',
       long_description='finna speedrun',
       entry_points={

@@ -1,6 +1,6 @@
 # user.py: user logging, creation, edits, delete
 
-import os, rich
+import os, rich, prompts
 from PyInquirer import prompt
 import mysql.connector as mysql
 
@@ -20,6 +20,8 @@ def teacher_create_table(cursor):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
+
+# not recommended for production, prone to unexpected errors
 def exists(cursor, trno):
     global exists
     exists = False
@@ -32,7 +34,7 @@ def exists(cursor, trno):
 
 def get_pswdhash(cursor, trno):
     trno = trno.upper()
-    cursor.execute("select PSWDHASH from students where TrNO='{}';".format(trno))
+    cursor.execute("select PSWDHASH from teachers where TrNO='{}';".format(trno))
     output = cursor.fetchone()
     return output[0].encode('ascii')
 
@@ -41,27 +43,7 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     console = rich.console.Console()
     table = rich.table.Table(show_header=True, header_style="bold magenta", show_footer=False)
     console.print('🆕 [bold green] New Teacher Registration Form [/bold green]\n')
-    questions = [
-        {
-            'type': 'input',
-            'name': 'full_name',
-            'message': 'What\'s your name',
-        },
-        {
-        
-            'type': 'confirm',
-            'name': 'is_counselor',
-            'message': 'Are you the counselor?',
-            'default': False
-        },
-        {
-            'type': 'list',
-            'name': 'subject',
-            'message': 'What subject do you teach?',
-            'choices': ['Accountancy', 'Biology', 'Biotechnology', 'BusinessStudies', 'Chemistry', 'ComputerScience', 'Economics', 'English', 'FineArts', 'Geography', 'Hindi', 'Mathematics', 'PerformingArts', 'PE', 'Physics', 'Political Science', 'Sanskrit' 'French', 'German'],
-            'when': lambda answers: not answers['is_counselor']
-        },
-    ]
+    questions = prompts.get_admin_questions()
     answers = prompt(questions)
     
     if not answers["is_counselor"]:
@@ -107,15 +89,15 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
     to_print = 'bruh'
-    global ok
-    ok = False
+    global ok_admin
+    ok_admin = 'not-ok'
 
     if confirmation['verify'] and confirmation['finish']:
         try:
             cursor.execute(query)
             to_print = '[INSERT] NEW ROW TEACHER'
             db.commit()
-            ok = True
+            ok_admin = 'ok'
         except mysql.Error as e:
             console.print('⚠️ Something Went Wrong :-(')
             to_print = f'[DB ERROR]: INSERTING\nMessage: {e}'
@@ -125,7 +107,7 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
     
-    return ok
+    return ok_admin
 
 
 def admin_dash(cursor, trno):
