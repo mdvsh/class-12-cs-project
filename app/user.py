@@ -12,12 +12,12 @@ def student_create_table(cursor):
     query = "create table if not exists students(AdmnNO char(6) NOT NULL, Name varchar(255) NOT NULL, Class char(3) NOT NULL, Stream varchar(5) NOT NULL, PSWDHASH CHAR(60) NOT NULL, PRIMARY KEY (AdmnNO));"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = '[ERROR]: COULD NOT CREATE STUDENT TABLE'
+    to_print = '[ERROR]: COULD NOT CREATE STUDENTS TABLE'
     try:
         cursor.execute(query)
-        to_print = '[CREATE] TABLE STUDENT'
+        to_print = '[CREATE] TABLE STUDENTS'
     except Exception:
-        console.print(':bulb: Existing student table found ')
+        console.print(':bulb: Existing students table found ')
         to_print = '[DB ERROR]: EXISTING TABLE FOUND'
 
     with open(LOG_PATH, 'a') as log_file:
@@ -29,24 +29,39 @@ def college_create_table(cursor):
     query = "create table if not exists colleges(CollegeID int not null auto_increment, CollegeName varchar(255) not null unique, primary key (CollegeID));"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = '[ERROR]: COULD NOT CREATE COLLEGE TABLE'
+    to_print = '[ERROR]: COULD NOT CREATE COLLEGES TABLE'
     try:
         cursor.execute(query)
-        to_print = '[CREATE] TABLE COLLEGE'
+        to_print = '[CREATE] TABLE COLLEGES'
     except Exception:
-        console.print(':bulb: Existing college table found ')
+        console.print(':bulb: Existing colleges table found ')
         to_print = '[DB ERROR]: EXISTING TABLE FOUND'
 
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
+def apps_create_table(cursor):
+    console = rich.console.Console()
+    query = "create table if not exists applications(AdmnNO char(6) not null, CollegeID int not null, Deadline varchar(255) not null, FinalTranscript bool default False not null, CounselorLOR bool default False not null, MidYearReport bool default False not null, PredictedMarks bool default False not null);"
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = '[ERROR]: COULD NOT CREATE APPLICATIONS TABLE'
+    try:
+        cursor.execute(query)
+        to_print = '[CREATE] TABLE APPLICATIONS'
+    except Exception:
+        console.print(':bulb: Existing applications table found ')
+        to_print = '[DB ERROR]: EXISTING TABLE FOUND'
+
+    with open(LOG_PATH, 'a') as log_file:
+        log_file.write(to_print+'\n')
 
 def add_college(db, cursor, name):
     console = rich.console.Console()
     query = "insert into colleges(Name) values('{}');".format(name)
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = '[ERROR]: COULD NOT CREATE COLLEGE TABLE'
+    to_print = '[ERROR]: COULD NOT ADD TO COLLEGE TABLE'
     try:
         cursor.execute(query)
         to_print = '[INSERT] NEW ROW COLLEGE'
@@ -59,6 +74,23 @@ def add_college(db, cursor, name):
     with open(LOG_PATH, 'a') as log_file:
         log_file.write(to_print+'\n')
 
+def create_application(db, cursor, studID, collegeID, deadline):
+    console = rich.console.Console()
+    query = "insert into applications(AdmnNo, CollegeID, Deadline) values('{}', {}, '{}');".format(studID, collegeID, deadline)
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = '[ERROR]: COULD NOT ADD TO APPLICATION TABLE'
+    try:
+        cursor.execute(query)
+        to_print = '[INSERT] NEW ROW APPLICATION'
+        db.commit()
+    # add handling if college already exists
+    except mysql.Error as e:
+        console.print('⚠️ Something Went Wrong :-(')
+        to_print = f'[DB ERROR]: INSERTING\nMessage: {e}'
+
+    with open(LOG_PATH, 'a') as log_file:
+        log_file.write(to_print+'\n')
 
 def get_existing_colleges(cursor):
     existing_choices = [
@@ -69,6 +101,12 @@ def get_existing_colleges(cursor):
     for college_t in output:
         existing_choices.append({'name': college_t[0]})
     return existing_choices
+
+def get_college_id(cursor, cname):
+    cursor.execute("select CollegeID from colleges where Name='{}';".format(cname))
+    output = cursor.fetchone()
+    return output[0]
+
 
 # archived (not recommended for use in production)
 
@@ -202,6 +240,12 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     for c in college_toadd_list:
         name = list(c.values())[0]
         add_college(db, cursor, name)
+
+    # create a new records in applications table
+    for c in college_list:
+        for deadline, cname in c.items():
+            collegeID = get_college_id(cursor, cname)
+            create_application(db, cursor, admnno, collegeID, deadline)
 
     if confirmation['verify'] and confirmation['finish']:
         try:

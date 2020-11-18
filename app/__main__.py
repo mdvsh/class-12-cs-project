@@ -47,10 +47,13 @@ def main():
         cursor.execute('use {};'.format(os.getenv('DATABASE_NAME')))
         console.print(
             'Connection [green][b]successful[/b][/green][blink]...[/blink]\n\n :gear: Initialising Tables\n\n')
+            
         # init and check for tables: user, counselor, teacher, sessions ...
         user.student_create_table(cursor)
         admin.teacher_create_table(cursor)
         user.college_create_table(cursor)
+        user.apps_create_table(cursor)
+
         login = False
         global inp
         while not login:
@@ -169,8 +172,9 @@ if __name__ == '__main__':
     console = Console()
     try:
         main()
-    except:
-        console.print_exception()
+    except Exception as e:
+        if e != KeyboardInterrupt:
+            console.print_exception()
         console.print('\n[bold red]Exiting gracefully...[/]\n')
         try:
             sys.exit(0)
