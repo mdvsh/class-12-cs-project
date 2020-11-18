@@ -9,7 +9,7 @@ import prompts
 
 def student_create_table(cursor):
     console = rich.console.Console()
-    query = "create table if not exists students(AdmnNO char(6) NOT NULL, Name varchar(255) NOT NULL, Class char(3) NOT NULL, Stream varchar(5) NOT NULL, PSWDHASH CHAR(60) NOT NULL, PRIMARY KEY (AdmnNO));"
+    query = "create table if not exists students(AdmnNO char(6) NOT NULL, Name varchar(255) NOT NULL, Class char(3) NOT NULL, Stream varchar(5) NOT NULL, FinalTranscript bool default False not null, CounselorLOR bool default False not null, MidYearReport bool default False not null, PredictedMarks bool default False not null, PSWDHASH CHAR(60) NOT NULL, PRIMARY KEY (AdmnNO));"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
     to_print = '[ERROR]: COULD NOT CREATE STUDENTS TABLE'
@@ -42,7 +42,7 @@ def college_create_table(cursor):
 
 def apps_create_table(cursor):
     console = rich.console.Console()
-    query = "create table if not exists applications(AdmnNO char(6) not null, CollegeID int not null, Deadline varchar(255) not null, FinalTranscript bool default False not null, CounselorLOR bool default False not null, MidYearReport bool default False not null, PredictedMarks bool default False not null, Submitted bool default False not null);"
+    query = "create table if not exists applications(AdmnNO char(6) not null, CollegeID int not null, Deadline varchar(255) not null, Submitted bool default False not null);"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
     to_print = '[ERROR]: COULD NOT CREATE APPLICATIONS TABLE'
@@ -124,6 +124,9 @@ def login_display_student(db, cursor, admno):
     table.box = rich.box.SIMPLE
     cursor.execute("select * from students where AdmnNO='{}';".format(admno))
     output = cursor.fetchone()
+
+    # cursor.execute("select ")
+
     table.add_column("Admn. No.")
     table.add_column("Student Name", width=18)
     table.add_column("Class/Section", justify='center')
@@ -190,7 +193,7 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
         for k, v in coll.items():
             watchlist += "[bold green]{}[/] : {}\n".format(k, v)
 
-    new_user_query = "insert into students values ('{}', '{}', '{}', '{}', '{}');".format(
+    new_user_query = "insert into students(AdmnNO, Name, Class, Stream, PSWDHASH) values ('{}', '{}', '{}', '{}', '{}');".format(
         admnno, answers['full_name'].title(), answers['clsec'], answers['stream'], pswd_hash)
 
     table.add_column("Admn. No.")
