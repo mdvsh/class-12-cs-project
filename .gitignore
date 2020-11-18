@@ -25,3 +25,4 @@ credentials.json
 *.pickle
 .env
 app/.env
+app/logs/logs.txt
