@@ -5,7 +5,8 @@ import rich
 from PyInquirer import prompt, Separator
 import mysql.connector as mysql
 import prompts
-
+from rich.columns import Columns
+from rich.panel import Panel
 
 def student_create_table(cursor):
     console = rich.console.Console()
@@ -121,11 +122,14 @@ def login_display_student(db, cursor, admno):
     console = rich.console.Console()
     table = rich.table.Table(
         show_header=True, header_style="bold magenta", show_footer=False)
-    table.box = rich.box.SIMPLE
+    table_two = rich.table.Table(show_header=True, header_style="bold yellow", show_footer=False)
+    table_three = rich.table.Table(show_header=True, header_style="bold blue", show_footer=False)
+    table_two.box = rich.box.MINIMAL
+    table_three.box = rich.box.MINIMAL
     cursor.execute("select * from students where AdmnNO='{}';".format(admno))
     output = cursor.fetchone()
-
-    # cursor.execute("select ")
+    cursor.execute("SELECT colleges.CollegeID, colleges.Name, applications.deadline FROM applications JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{}';".format(admnno))
+    watchlist = cursor.fetchall()
 
     table.add_column("Admn. No.")
     table.add_column("Student Name", width=18)
@@ -140,9 +144,45 @@ def login_display_student(db, cursor, admno):
         "Your password is securely hashed for verification."
     )
 
+    table_two.add_column("Official Documents")
+    table_two.add_column("Status", justify='center')
+    table_two.add_row(
+        '[bold]Final Transcript[/]',
+        '✅' if output[4] == 1 else '❌'
+    )
+    table_two.add_row(
+        '[bold]Final Transcript[/]',
+        '✅' if output[4] == 1 else '❌'
+    )
+    table_two.add_row(
+        '[bold]Counselor LOR[/]',
+        '✅' if output[4] == 1 else '❌'
+    )
+    table_two.add_row(
+        '[bold]Mid-Year Report[/]',
+        '✅' if output[4] == 1 else '❌'
+    )
+    table_two.add_row(
+        '[bold]Predicted Marks[/]',
+        '✅' if output[4] == 1 else '❌'
+    )
+
+    table_three.title= "👀 Your Watchlist"
+    table_three.add_column("CollegeID", justify='left')
+    table_three.add_column("College Name")
+    table_three.add_column("Deadline")
+    for college in watchlist:
+        table_three.add_row(
+            f'[dim]{college[0]}[/]',
+            f'{college[1]}',
+            f'[bold green]{college[2]}[/]'
+        )
+
     console.print("\n\n[yellow]Here's what we got from you[/]\n")
     console.print(table, justify='center')
-
+    # console.print(table_two, justify='left')
+    # console.print(table_three, justify='right')
+    console.print(Columns([Panel(table_two), Panel(table_three)], expand=True, equal=True))
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
     admnno = admnno.upper()
