@@ -3,6 +3,7 @@
 import os, rich
 from PyInquirer import prompt
 import mysql.connector as mysql
+import prompts
 
 def teacher_create_table(cursor):
     console = rich.console.Console()
@@ -41,27 +42,7 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     console = rich.console.Console()
     table = rich.table.Table(show_header=True, header_style="bold magenta", show_footer=False)
     console.print('🆕 [bold green] New Teacher Registration Form [/bold green]\n')
-    questions = [
-        {
-            'type': 'input',
-            'name': 'full_name',
-            'message': 'What\'s your name',
-        },
-        {
-        
-            'type': 'confirm',
-            'name': 'is_counselor',
-            'message': 'Are you the counselor?',
-            'default': False
-        },
-        {
-            'type': 'list',
-            'name': 'subject',
-            'message': 'What subject do you teach?',
-            'choices': ['Accountancy', 'Biology', 'Biotechnology', 'BusinessStudies', 'Chemistry', 'ComputerScience', 'Economics', 'English', 'FineArts', 'Geography', 'Hindi', 'Mathematics', 'PerformingArts', 'PE', 'Physics', 'Political Science', 'Sanskrit' 'French', 'German'],
-            'when': lambda answers: not answers['is_counselor']
-        },
-    ]
+    questions = prompts.get_admin_questions()
     answers = prompt(questions)
     
     if not answers["is_counselor"]:
@@ -130,4 +111,4 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
 
 def admin_dash(cursor, trno):
     cursor.execute("SELECT COUNT(*) FROM students")
-    number = cursor.fetchone()
+    number = cursor.fetchone()[0]
