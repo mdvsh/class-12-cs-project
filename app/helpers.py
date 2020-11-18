@@ -1,5 +1,7 @@
 from rich.table import Table
 from rich.console import Console
+import os
+import mysql.connector as mysql
 
 # we can format the tables later
 
