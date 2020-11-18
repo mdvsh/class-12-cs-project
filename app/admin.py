@@ -126,3 +126,8 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
         log_file.write(to_print+'\n')
     
     return ok
+
+
+def admin_dash(cursor, trno):
+    cursor.execute("SELECT COUNT(*) FROM students")
+    number = cursor.fetchone()

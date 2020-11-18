@@ -87,7 +87,7 @@ def main():
                         ok = admin.teacher_create_prompt(db, cursor, trno.upper(), hsh.decode('ascii'))
                         if ok:
                             login = True
-                            print('todo...')
+                            
 
             elif inp == '2':
                 global admnno
