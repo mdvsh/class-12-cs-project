@@ -21,17 +21,6 @@ def teacher_create_table(cursor):
         log_file.write(to_print+'\n')
 
 
-# not recommended for production, prone to unexpected errors
-def exists(cursor, trno):
-    global exists
-    exists = False
-    cursor.execute("select * from teachers where TrNO='{}';".format(trno))
-    output = cursor.fetchone()
-    # print(output)
-    if output != None:
-        exists = True
-    return exists
-
 def get_pswdhash(cursor, trno):
     trno = trno.upper()
     cursor.execute("select PSWDHASH from teachers where TrNO='{}';".format(trno))

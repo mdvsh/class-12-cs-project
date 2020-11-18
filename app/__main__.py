@@ -31,7 +31,7 @@ def main():
     # console.print(font.renderText('IntlApp Dashboard - CLI'), style='bold green')
     text = Text(justify='center').assemble((font.renderText(
         'IntlApp'), 'bold green'), (font.renderText('Dashboard'), 'bold yellow'))
-    console.print(text)
+    console.print(text, justify='full')
 
     ps = 3306 if os.name == 'nt' else '3306'
 
@@ -65,7 +65,7 @@ def main():
                 global exist
                 console.print('Enter the [b]Admin Credentials[/b]\n')
                 trno = str(input('Enter your Staff/Teacher ID:'))
-                console.print('🔎 Searching for existing record in the database...')
+                console.print('\n\n🔎 Searching for existing record in the database...')
                 exist = False
                 cursor.execute(
                     "select * from teachers where TrNO='{}';".format(trno))
@@ -73,7 +73,8 @@ def main():
                 if output != None:
                     exist = True
                 if exist:
-                    console.print(':+1: Existing Record found.\n[bold green] Login to your account[/bold green]\n\n')
+                    console.print(':+1: Existing Record found.\n', justify='center')
+                    console.print('[b]Login to your account[/b]\n', justify='center')
                     password = getpass(prompt='Enter your password: ')
                     password = password.encode('ascii')
                     pswd_hash = admin.get_pswdhash(cursor, trno)
@@ -172,9 +173,9 @@ if __name__ == '__main__':
     console = Console()
     try:
         main()
-    except Exception as e:
-        if e != KeyboardInterrupt:
-            console.print_exception()
+    except:
+        # halt traceback for sometime
+        # console.print_exception()
         console.print('\n[bold red]Exiting gracefully...[/]\n')
         try:
             sys.exit(0)

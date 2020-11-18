@@ -42,7 +42,7 @@ def college_create_table(cursor):
 
 def apps_create_table(cursor):
     console = rich.console.Console()
-    query = "create table if not exists applications(AdmnNO char(6) not null, CollegeID int not null, Deadline varchar(255) not null, FinalTranscript bool default False not null, CounselorLOR bool default False not null, MidYearReport bool default False not null, PredictedMarks bool default False not null);"
+    query = "create table if not exists applications(AdmnNO char(6) not null, CollegeID int not null, Deadline varchar(255) not null, FinalTranscript bool default False not null, CounselorLOR bool default False not null, MidYearReport bool default False not null, PredictedMarks bool default False not null, Submitted bool default False not null);"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
     to_print = '[ERROR]: COULD NOT CREATE APPLICATIONS TABLE'
@@ -108,20 +108,6 @@ def get_college_id(cursor, cname):
     return output[0]
 
 
-# archived (not recommended for use in production)
-
-
-def exists(cursor, admmno):
-    global exists
-    exists = False
-    cursor.execute("select * from students where AdmnNO='{}';".format(admmno))
-    output = cursor.fetchone()
-    # print(output)
-    if output != None:
-        exists = True
-    return exists
-
-
 def get_pswdhash(cursor, admnno):
     admnno = admnno.upper()
     cursor.execute(
@@ -135,7 +121,7 @@ def login_display_student(db, cursor, admno):
     console = rich.console.Console()
     table = rich.table.Table(
         show_header=True, header_style="bold magenta", show_footer=False)
-
+    table.box = rich.box.SIMPLE
     cursor.execute("select * from students where AdmnNO='{}';".format(admno))
     output = cursor.fetchone()
     table.add_column("Admn. No.")
@@ -151,7 +137,8 @@ def login_display_student(db, cursor, admno):
         "Your password is securely hashed for verification."
     )
 
-    console.print("\n\n[yellow]Here's what we got from you[/]\n", table)
+    console.print("\n\n[yellow]Here's what we got from you[/]\n")
+    console.print(table, justify='center')
 
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
