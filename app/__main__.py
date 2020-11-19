@@ -6,7 +6,7 @@ import mysql.connector as mysql
 from rich.console import Console
 from rich.text import Text
 from pyfiglet import Figlet
-import user, admin
+import user, admin, notifs
 from getpass import getpass
 import helpers
 from PyInquirer import prompt
@@ -58,6 +58,7 @@ def main():
         admin.teacher_create_table(cursor)
         user.college_create_table(cursor)
         user.apps_create_table(cursor)
+        notifs.create_table(cursor)
 
         login = False
         global inp

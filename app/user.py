@@ -4,9 +4,9 @@ import os
 import rich
 from PyInquirer import prompt, Separator
 import mysql.connector as mysql
-import prompts
 from rich.columns import Columns
 from rich.panel import Panel
+import helpers, prompts, notifs
 
 
 def student_create_table(cursor):
@@ -141,7 +141,7 @@ def login_display_student(db, cursor, admno):
     cursor.execute("select * from students where AdmnNO='{}';".format(admno))
     output = cursor.fetchone()
     cursor.execute(
-        "SELECT colleges.CollegeID, colleges.Name, applications.deadline FROM applications JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{}';".format(
+        "SELECT colleges.CollegeID, colleges.Name, applications.deadline, applications.submitted FROM applications JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{}';".format(
             admnno
         )
     )
@@ -160,29 +160,35 @@ def login_display_student(db, cursor, admno):
         "Your password is securely hashed for verification.",
     )
 
-    table_two.add_column("Official Documents")
+    table_two.title = "[not italic]📋[/] Counselor Documents"
+    table_two.add_column("Document Name")
     table_two.add_column("Status", justify="center")
-    table_two.add_row("[bold]Final Transcript[/]", "✅" if output[4] == 1 else "❌")
     table_two.add_row("[bold]Final Transcript[/]", "✅" if output[4] == 1 else "❌")
     table_two.add_row("[bold]Counselor LOR[/]", "✅" if output[4] == 1 else "❌")
     table_two.add_row("[bold]Mid-Year Report[/]", "✅" if output[4] == 1 else "❌")
     table_two.add_row("[bold]Predicted Marks[/]", "✅" if output[4] == 1 else "❌")
 
-    table_three.title = "👀 Your Watchlist"
+    table_three.title = "[not italic]👀[/] Your Watchlist"
     table_three.add_column("CollegeID", justify="left")
     table_three.add_column("College Name")
     table_three.add_column("Deadline")
+    table_three.add_column("Submitted?", justify="center")
     for college in watchlist:
         table_three.add_row(
-            f"[dim]{college[0]}[/]", f"{college[1]}", f"[bold green]{college[2]}[/]"
+            f"[dim]{college[0]}[/]",
+            f"{college[1]}",
+            f"[bold green]{college[2]}[/]",
+            "✅" if college[3] == 1 else "❌",
         )
 
     console.print("\n\n[yellow]Here's what we got from you[/]\n")
     console.print(table, justify="center")
-    # console.print(table_two, justify='left')
-    # console.print(table_three, justify='right')
+    ref_panel = helpers.deadlines_panel()
+    notif_panel = notifs.panel(cursor, output[3])
     console.print(
-        Columns([Panel(table_two), Panel(table_three)], expand=True, equal=True)
+        Columns(
+            [Panel(table_two), Panel(table_three), ref_panel, notif_panel], expand=True
+        )
     )
 
 
@@ -289,7 +295,9 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     # create a new records in applications table
     for c in college_list:
         for deadline, cname in c.items():
-            collegeID = get_college_id(cursor, cname)
+            collegeID = helpers.get_single_record(
+                cursor, "CollegeID", "colleges", "Name", cname
+            )
             create_application(db, cursor, admnno, collegeID, deadline)
 
     if confirmation["verify"] and confirmation["finish"]:
