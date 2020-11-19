@@ -11,10 +11,14 @@ from getpass import getpass
 import helpers
 from PyInquirer import prompt
 
+is_counselor = False
+
+
 def main():
     load_dotenv(verbose=True)
     try:
         import colorama
+
         colorama.init()
     except ImportError:
         colorama = None
@@ -25,84 +29,101 @@ def main():
 
     console = Console()
     init = Text()
-    init.append('Starting Application \n\n', style='italic')
+    init.append("Starting Application \n\n", style="italic")
     console.print(init)
-    font = Figlet(font='larry3d')
+    font = Figlet(font="larry3d")
     # console.print(font.renderText('IntlApp Dashboard - CLI'), style='bold green')
-    text = Text(justify='center').assemble((font.renderText(
-        'IntlApp'), 'bold green'), (font.renderText('Dashboard'), 'bold yellow'))
+    text = Text(justify="center").assemble(
+        (font.renderText("IntlApp"), "bold green"),
+        (font.renderText("Dashboard"), "bold yellow"),
+    )
     console.print(text)
 
-    ps = 3306 if os.name == 'nt' else '3306'
+    ps = 3306 if os.name == "nt" else "3306"
 
     db = mysql.connect(
-        host='localhost',
-        user=os.getenv('DATABASE_USERNAME'),
-        password=os.getenv('DATABASE_PASSWORD'),
+        host="localhost",
+        user=os.getenv("DATABASE_USERNAME"),
+        password=os.getenv("DATABASE_PASSWORD"),
         port=ps,
-        database=os.getenv('DATABASE_NAME')
+        database=os.getenv("DATABASE_NAME"),
     )
     if db:
         cursor = db.cursor(buffered=True)
-        cursor.execute('use {};'.format(os.getenv('DATABASE_NAME')))
+        cursor.execute("use {};".format(os.getenv("DATABASE_NAME")))
         console.print(
-            'Connection [green][b]successful[/b][/green][blink]...[/blink]\n\n :gear: Initialising Tables\n\n')
+            "Connection [green][b]successful[/b][/green][blink]...[/blink]\n\n :gear: Initialising Tables\n\n"
+        )
         # init and check for tables: user, counselor, teacher, sessions ...
         user.student_create_table(cursor)
         admin.teacher_create_table(cursor)
         user.college_create_table(cursor)
         login = False
         while not login:
-            console.print(
-                '🔐 Login as ? \n\n (1) Counselor / Teacher \n (2) Student')
-            inp = str(input('\n\nPlease enter number to login as: '))
-            if inp == '1':
-                console.print('Enter the [b]Admin Credentials[/b]')
+            console.print("🔐 Login as ? \n\n (1) Counselor / Teacher \n (2) Student")
+            inp = str(input("\n\nPlease enter number to login as: "))
+            if inp == "1":
+                console.print("Enter the [b]Admin Credentials[/b]")
                 print()
                 global trno
-                trno = str(input('Enter your Staff/Teacher ID:'))
-                console.print('🔎 Searching for existing record in the database...')
+                trno = str(input("Enter your Staff/Teacher ID: "))
+                console.print("🔎 Searching for existing record in the database...")
 
+                # exist is a tuple having value exist and value is_counselor
                 exist = admin.exists(cursor, trno)
-                if exist:
+                if exist[0]:
                     # ask for password, unhash and confirm login = True
-                    console.print(':+1: Existing Record found.\n[bold green] Login to your account[/bold green]\n\n')
-                    password = getpass(prompt='Enter your password: ')
-                    password = password.encode('ascii')
-                    pswd_hash = user.get_pswdhash(cursor, trno)
+                    is_counselor = exist[1]
+                    console.print(
+                        ":+1: Existing Record found.\n[bold green] Login to your account[/bold green]\n\n"
+                    )
+                    password = getpass(prompt="Enter your password: ")
+                    password = password.encode("ascii")
+                    pswd_hash = admin.get_pswdhash(cursor, trno)
                     if bcrypt.checkpw(password, pswd_hash):
                         login = True
-                        console.print('\n[u green]Password verified.[/u green]\n\n')
+                        console.print("\n[u green]Password verified.[/u green]\n\n")
                     else:
-                        console.print('\n[u]Password [red]not verified.[/red][/u]\n\n')
+                        console.print("\n[u]Password [red]not verified.[/red][/u]\n\n")
                 else:
                     # create new admin, ask for password, ask for details then show table to confirm reg and login = True
-                    console.print(':pensive: Record not found.\n\n')
-                    new = str(input('Would you like to create an account [y/n] ? '))
-                    if new[0] == 'n':
-                        console.print("Uh-oh! Thank you for using IntlApp Dashboard.\n\n[i]Exiting...[/i]")
+                    console.print(":pensive: Record not found.\n\n")
+                    new = str(input("Would you like to create an account [y/n] ? "))
+                    if new[0] == "n":
+                        console.print(
+                            "Uh-oh! Thank you for using IntlApp Dashboard.\n\n[i]Exiting...[/i]"
+                        )
                         exit()
                     else:
-                        console.print('🙈 [i green]We do not store your passwords.[/i green]')
+                        console.print(
+                            "🙈 [i green]We do not store your passwords.[/i green]"
+                        )
                         # admnno = str(input('Enter Admission Number: '))
-                        password = getpass(prompt='Enter a new password: ')
-                        password = password.encode('ascii')
-                        hsh = bcrypt.hashpw(password, os.getenv('BCRYPT_SALT').encode('ascii'))
+                        password = getpass(prompt="Enter a new password: ")
+                        password = password.encode("ascii")
+                        hsh = bcrypt.hashpw(
+                            password, os.getenv("BCRYPT_SALT").encode("ascii")
+                        )
                         # send admnno and pswd hash to creation function
-                        ok = admin.teacher_create_prompt(db, cursor, trno.upper(), hsh.decode('ascii'))
-                        if ok:
+                        ok = admin.teacher_create_prompt(
+                            db, cursor, trno.upper(), hsh.decode("ascii")
+                        )
+                        if ok[0]:
                             login = True
-                            
 
-            elif inp == '2':
+                            is_counselor = ok[1]
+                            if is_counselor:
+                                admin.counselor_dash(cursor, trno.upper())
+
+            elif inp == "2":
                 global admnno
                 global exists
-                admnno = str(input('Enter your admission number: '))
-                console.print(
-                    '🔎 Searching for existing record in the database...')
+                admnno = str(input("Enter your admission number: "))
+                console.print("🔎 Searching for existing record in the database...")
                 exists = False
                 cursor.execute(
-                    "select * from students where AdmnNO='{}';".format(admnno))
+                    "select * from students where AdmnNO='{}';".format(admnno)
+                )
                 output = cursor.fetchone()
                 # print(output)
                 if output != None:
@@ -110,53 +131,66 @@ def main():
                 if exists:
                     # ask for password, unhash and confirm login = True
                     console.print(
-                        ':+1: Existing Record found.\n\n[u green] Login to your account[/u green]\n')
-                    password = getpass(prompt='Enter your password: ')
-                    password = password.encode('ascii')
+                        ":+1: Existing Record found.\n\n[u green] Login to your account[/u green]\n"
+                    )
+                    password = getpass(prompt="Enter your password: ")
+                    password = password.encode("ascii")
                     pswd_hash = user.get_pswdhash(cursor, admnno)
                     if bcrypt.checkpw(password, pswd_hash):
                         login = True
-                        console.print(
-                            '\n[u green]Password verified.[/u green]\n\n')
+                        console.print("\n[u green]Password verified.[/u green]\n\n")
                     else:
-                        console.print(
-                            '\n[u]Password [red]not verified.[/red][/u]\n\n')
+                        console.print("\n[u]Password [red]not verified.[/red][/u]\n\n")
                 else:
                     # create new user, ask for password, ask for details then show table to confirm reg and login = True
-                    console.print(':pensive: Record not found.\n\n')
+                    console.print(":pensive: Record not found.\n\n")
                     confirm = [
-                        {'type': 'confirm', 'message': 'Would you like to create a new account',
-                            'name': 'verify', 'default': True},
+                        {
+                            "type": "confirm",
+                            "message": "Would you like to create a new account",
+                            "name": "verify",
+                            "default": True,
+                        },
                     ]
                     answers = prompt(confirm)
-                    if not answers['verify']:
+                    if not answers["verify"]:
                         console.print(
-                            "Uh-oh! Thank you for using IntlApp Dashboard.\n\n[i]Exiting...[/i]")
+                            "Uh-oh! Thank you for using IntlApp Dashboard.\n\n[i]Exiting...[/i]"
+                        )
                         exit()
                     else:
                         console.print(
-                            '🙈 [i green]We do not store your passwords.[/i green]')
+                            "🙈 [i green]We do not store your passwords.[/i green]"
+                        )
                         # admnno = str(input('Enter Admission Number: '))
-                        password = getpass(prompt='Enter a new password: ')
-                        password = password.encode('ascii')
-                        hsh = bcrypt.hashpw(password, os.getenv(
-                            'BCRYPT_SALT').encode('ascii'))
+                        password = getpass(prompt="Enter a new password: ")
+                        password = password.encode("ascii")
+                        hsh = bcrypt.hashpw(
+                            password, os.getenv("BCRYPT_SALT").encode("ascii")
+                        )
                         # send admnno and pswd hash to creation function
                         ok = user.student_create_prompt(
-                            db, cursor, admnno.upper(), hsh.decode('ascii'))
-                        if ok == 'ok':
+                            db, cursor, admnno.upper(), hsh.decode("ascii")
+                        )
+                        if ok == "ok":
                             login = True
-                            print('todo...')
+                            print("todo...")
                         else:
                             break
             else:
-                print('catch something maybe')
+                print("catch something maybe")
         if login:
-            console.print('✅ Login Successful')
-            user.login_display_student(db, cursor, admnno)
-            
+            console.print("✅ Login Successful")
+            if inp == "2":
+                user.login_display_student(db, cursor, admnno)
+            elif inp == "1":
+                if is_counselor:
+                    admin.counselor_dash(cursor, trno.upper())
+                else:
+                    print("todo")
+
     else:
-        console.print('⚠️  Something went wrong... Please try again.')
+        console.print("⚠️  Something went wrong... Please try again.")
     # except:
     #     console.print('There was some error connecting to the database.\n\n[bold red]⚠️  Something went wrong... Please try again.[/bold red]')
     #     exit
@@ -164,12 +198,12 @@ def main():
     # prompt starts now
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     console = Console()
     try:
         main()
     except (KeyboardInterrupt, EOFError, KeyError):
-        console.print('\n\n\n[bold red]Exiting gracefully...[/]')
+        console.print("\n\n\n[bold red]Exiting gracefully...[/]")
         try:
             sys.exit(0)
         except SystemExit:
