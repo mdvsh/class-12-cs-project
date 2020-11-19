@@ -186,9 +186,7 @@ def login_display_student(db, cursor, admno):
     ref_panel = helpers.deadlines_panel()
     notif_panel = notifs.panel(cursor, output[3])
     console.print(
-        Columns(
-            [Panel(table_two), Panel(table_three), ref_panel, notif_panel], expand=True
-        )
+        Columns([Panel(table_two), Panel(table_three), ref_panel, notif_panel])
     )
 
 

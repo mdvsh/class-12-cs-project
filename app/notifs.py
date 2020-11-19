@@ -2,10 +2,8 @@ import os
 import rich
 from PyInquirer import prompt, Separator
 import mysql.connector as mysql
-import prompts
 from rich.columns import Columns
 from rich.panel import Panel
-import helpers
 
 
 def create_table(cursor):
@@ -46,6 +44,6 @@ def panel(cursor, stream, panel=True):
         for notif in notifications:
             table.add_row(f"[dim]{notif[0]}[/]", f"{notif[1]}")
     else:
-        table.add_row(':+1:', 'You have no pending notifications.')
+        table.add_row(":+1:", "You have no pending notifications.")
 
     return Panel(table) if panel else console.print(table)
