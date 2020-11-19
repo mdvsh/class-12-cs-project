@@ -124,8 +124,8 @@ def get_pswdhash(cursor, admnno):
     return output[0].encode("ascii")
 
 
-def login_display_student(db, cursor, admno):
-    admnno = admno.upper()
+def login_display_student(db, cursor, admnno):
+    admnno = admnno.upper()
     console = rich.console.Console()
     table = rich.table.Table(
         show_header=True, header_style="bold magenta", show_footer=False
@@ -138,7 +138,7 @@ def login_display_student(db, cursor, admno):
     )
     table_two.box = rich.box.MINIMAL
     table_three.box = rich.box.MINIMAL
-    cursor.execute("select * from students where AdmnNO='{}';".format(admno))
+    cursor.execute("select * from students where AdmnNO='{}';".format(admnno))
     output = cursor.fetchone()
     cursor.execute(
         "SELECT colleges.CollegeID, colleges.Name, applications.deadline, applications.submitted FROM applications JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{}';".format(

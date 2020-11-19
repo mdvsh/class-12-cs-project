@@ -3,6 +3,7 @@
 import os, rich, prompts
 from PyInquirer import prompt
 import mysql.connector as mysql
+import prompts
 
 
 def teacher_create_table(cursor):
@@ -20,6 +21,19 @@ def teacher_create_table(cursor):
 
     with open(LOG_PATH, "a") as log_file:
         log_file.write(to_print + "\n")
+
+
+def exists(cursor, trno):
+    global exists
+    exists = False
+    cursor.execute("select IS_COUNSELOR from teachers where TrNO='{}';".format(trno))
+    output = cursor.fetchone()
+    # print(output)
+    is_counselor = False
+    if output != None:
+        exists = True
+        is_counselor = bool(output[0])
+    return exists, is_counselor
 
 
 def get_pswdhash(cursor, trno):
@@ -99,9 +113,9 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
 
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = "bruh"
+    to_print = "[ERROR]: COULD NOT INSERT ROW"
     global ok_admin
-    ok_admin = "not-ok"
+    ok_admin = 'not-ok'
 
     if confirmation["verify"] and confirmation["finish"]:
         try:
@@ -120,9 +134,145 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     with open(LOG_PATH, "a") as log_file:
         log_file.write(to_print + "\n")
 
-    return ok_admin
+    is_c = "ok" if bool(answers['is_counselor']) else 'not-ok'
+
+    return ok_admin, is_c
 
 
-def admin_dash(cursor, trno):
+def counselor_dash(cursor, trno):
+    console = rich.console.Console()
     cursor.execute("SELECT COUNT(*) FROM students")
-    number = cursor.fetchone()
+    number = cursor.fetchone()[0]
+    print()
+    console.print(
+        f"[bold green]Students Registered[/bold green]: [magenta]{number}[magenta]"
+    )
+    print()
+
+    while True:
+        optionAnswer = prompt(prompts.get_admin_options())
+
+        if optionAnswer["option"] == "Search for a student":
+            searchMethodAnswer = prompt(prompts.get_admin_search_method())
+            if searchMethodAnswer["method"] == "Search by AdmnNO":
+                s_admnno = str(input("Enter the admission number: "))
+                cursor.execute(
+                    f"SELECT AdmnNO, Name, Class, Stream FROM students WHERE AdmnNO = '{s_admnno}'"
+                )
+                record = cursor.fetchone()
+                table = rich.table.Table(
+                    show_header=True, header_style="bold magenta", show_footer=False
+                )
+                table.add_column("Admn. No")
+                table.add_column("Student Name", width=18)
+                table.add_column("ClassSection", justify="left")
+                table.add_column("Stream")
+
+                table.add_row(
+                    f"{record[0]}", f"{record[1]}", f"{record[2]}", f"{record[3]}"
+                )
+
+                console.print(table)
+
+            elif searchMethodAnswer["method"] == "Search by Class-Section":
+                s_clsec = str(input("Enter the Class and section (eg, 12J): "))
+                cursor.execute(
+                    f"SELECT AdmnNO, Name, Class, Stream FROM students WHERE Class = '{s_clsec}'"
+                )
+                records = cursor.fetchall()
+                table = rich.table.Table(
+                    show_header=True, header_style="bold magenta", show_footer=False
+                )
+                table.add_column("Admn. No")
+                table.add_column("Student Name", width=20)
+                table.add_column("ClassSection", justify="left")
+                table.add_column("Stream")
+
+                for record in records:
+                    table.add_row(
+                        f"{record[0]}", f"{record[1]}", f"{record[2]}", f"{record[3]}"
+                    )
+
+                console.print(table)
+
+            elif searchMethodAnswer["method"] == "Search by Stream":
+                s_stream_prompt = [
+                    {
+                        "type": "list",
+                        "name": "stream",
+                        "message": "Select Stream",
+                        "choices": [
+                            "PCB",
+                            "PCMC",
+                            "PCMB",
+                            "PCME",
+                            "COMM.",
+                            "HUMA.",
+                            "OTHER",
+                        ],
+                    },
+                ]
+                s_stream_answer = prompt(s_stream_prompt)
+
+                cursor.execute(
+                    "SELECT AdmnNO, Name, Class, Stream FROM students WHERE Stream = '{}';".format(
+                        s_stream_answer["stream"]
+                    )
+                )
+                records = cursor.fetchall()
+                table = rich.table.Table(
+                    show_header=True, header_style="bold magenta", show_footer=False
+                )
+                table.add_column("Admn. No")
+                table.add_column("Student Name", width=20)
+                table.add_column("ClassSection", justify="left")
+                table.add_column("Stream")
+
+                for record in records:
+                    table.add_row(
+                        f"{record[0]}", f"{record[1]}", f"{record[2]}", f"{record[3]}"
+                    )
+
+                console.print(table)
+
+            elif searchMethodAnswer["method"] == "Search by Deadline":
+                s_deadline_prompt = [
+                    {
+                        "type": "list",
+                        "name": "deadline",
+                        "message": "Select Deadline",
+                        "choices": [
+                            "November first-week (US_EARLY1)",
+                            "Mid-November (UK/US_EARLY2)",
+                            "November End (US_UCs)",
+                            "January first-week (UK/US_REGULAR)",
+                            "Not decided (ND)",
+                        ],
+                    }
+                ]
+                s_deadline_answer = prompt(s_deadline_prompt)
+
+                cursor.execute(
+                    "SELECT AdmnNO, Name, Class, Stream FROM students WHERE Stream = '{}';".format(
+                        s_stream_answer["stream"]
+                    )
+                )
+                records = cursor.fetchall()
+                table = rich.table.Table(
+                    show_header=True, header_style="bold magenta", show_footer=False
+                )
+                table.add_column("Admn. No")
+                table.add_column("Student Name", width=20)
+                table.add_column("ClassSection", justify="left")
+                table.add_column("Stream")
+
+                for record in records:
+                    table.add_row(
+                        f"{record[0]}", f"{record[1]}", f"{record[2]}", f"{record[3]}"
+                    )
+
+                console.print(table)
+        # elif optionAnswer["option"] == "Update status of a student":
+        #     print("todo")
+        elif optionAnswer["option"] == "Add a college to the database":
+            print("todo")

@@ -11,7 +11,6 @@ from getpass import getpass
 import helpers
 from PyInquirer import prompt
 
-
 def main():
     load_dotenv(verbose=True)
     try:
@@ -52,7 +51,6 @@ def main():
         console.print(
             "Connection [green][b]successful[/b][/green][blink]...[/blink]\n\n :gear: Initialising Tables\n\n"
         )
-
         # init and check for tables: user, counselor, teacher, sessions ...
         user.student_create_table(cursor)
         admin.teacher_create_table(cursor)
@@ -68,14 +66,15 @@ def main():
             if inp == "1":
                 global trno
                 global exist
+                global is_counselor
                 console.print("Enter the [b]Admin Credentials[/b]\n")
                 trno = str(input("Enter your Staff/Teacher ID:"))
                 console.print("\n\n🔎 Searching for existing record in the database...")
-                exist = False
-                cursor.execute("select * from teachers where TrNO='{}';".format(trno))
+                is_counselor, exist = False, False
+                cursor.execute("select IS_COUNSELOR from teachers where TrNO='{}';".format(trno))
                 output = cursor.fetchone()
                 if output != None:
-                    exist = True
+                    exist, is_counselor = True, True
                 if exist:
                     console.print(":+1: Existing Record found.\n", justify="center")
                     console.print("[b]Login to your account[/b]\n", justify="center")
@@ -112,11 +111,13 @@ def main():
                         hsh = bcrypt.hashpw(
                             password, os.getenv("BCRYPT_SALT").encode("ascii")
                         )
-                        ok = admin.teacher_create_prompt(
+                        ok, is_c = admin.teacher_create_prompt(
                             db, cursor, trno.upper(), hsh.decode("ascii")
                         )
                         if ok == "ok":
                             login = True
+                            if is_c == 'ok':
+                                admin.counselor_dash(cursor, trno.upper())
                             print("todo...")
                         else:
                             break
@@ -184,6 +185,10 @@ def main():
             user.login_display_student(db, cursor, admnno)
         elif login and inp == "1":
             console.print("✅ Teacher Login Successful")
+            if is_counselor:
+                admin.counselor_dash(cursor, trno.upper())
+            else:
+                print('todo')
     else:
         console.print("⚠️  Something went wrong... Please try again.")
     # except:
