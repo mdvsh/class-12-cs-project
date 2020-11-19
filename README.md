@@ -6,6 +6,7 @@ create database `db` first in mysql, enter database creds as specified in `app/.
 run the following commands
 
 ```console
-$ python setup.py
+$ python setup.py build
+$ python setup.py install
 $ python app
 ```

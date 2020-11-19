@@ -26,3 +26,4 @@ credentials.json
 .env
 app/.env
 app/logs/logs.txt
+lol.py

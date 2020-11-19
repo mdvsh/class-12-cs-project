@@ -4,20 +4,22 @@ import os
 import rich
 from PyInquirer import prompt, Separator
 import mysql.connector as mysql
-import prompts
+from rich.columns import Columns
+from rich.panel import Panel
+import helpers, prompts, notifs
 
 
 def student_create_table(cursor):
     console = rich.console.Console()
-    query = "create table if not exists students(AdmnNO char(6) NOT NULL, Name varchar(255) NOT NULL, Class char(3) NOT NULL, Stream varchar(5) NOT NULL, PSWDHASH CHAR(60) NOT NULL, PRIMARY KEY (AdmnNO));"
+    query = "create table if not exists students(AdmnNO char(6) NOT NULL, Name varchar(255) NOT NULL, Class char(3) NOT NULL, Stream varchar(5) NOT NULL, FinalTranscript bool default False not null, CounselorLOR bool default False not null, MidYearReport bool default False not null, PredictedMarks bool default False not null, PSWDHASH CHAR(60) NOT NULL, PRIMARY KEY (AdmnNO));"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = "[ERROR]: COULD NOT CREATE STUDENT TABLE"
+    to_print = "[ERROR]: COULD NOT CREATE STUDENTS TABLE"
     try:
         cursor.execute(query)
-        to_print = "[CREATE] TABLE STUDENT"
+        to_print = "[CREATE] TABLE STUDENTS"
     except Exception:
-        console.print(":bulb: Existing student table found ")
+        console.print(":bulb: Existing students table found ")
         to_print = "[DB ERROR]: EXISTING TABLE FOUND"
 
     with open(LOG_PATH, "a") as log_file:
@@ -29,12 +31,29 @@ def college_create_table(cursor):
     query = "create table if not exists colleges(CollegeID int not null auto_increment, CollegeName varchar(255) not null unique, primary key (CollegeID));"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = "[ERROR]: COULD NOT CREATE COLLEGE TABLE"
+    to_print = "[ERROR]: COULD NOT CREATE COLLEGES TABLE"
     try:
         cursor.execute(query)
-        to_print = "[CREATE] TABLE COLLEGE"
+        to_print = "[CREATE] TABLE COLLEGES"
     except Exception:
-        console.print(":bulb: Existing college table found ")
+        console.print(":bulb: Existing colleges table found ")
+        to_print = "[DB ERROR]: EXISTING TABLE FOUND"
+
+    with open(LOG_PATH, "a") as log_file:
+        log_file.write(to_print + "\n")
+
+
+def apps_create_table(cursor):
+    console = rich.console.Console()
+    query = "create table if not exists applications(AdmnNO char(6) not null, CollegeID int not null, Deadline varchar(255) not null, Submitted bool default False not null);"
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = "[ERROR]: COULD NOT CREATE APPLICATIONS TABLE"
+    try:
+        cursor.execute(query)
+        to_print = "[CREATE] TABLE APPLICATIONS"
+    except Exception:
+        console.print(":bulb: Existing applications table found ")
         to_print = "[DB ERROR]: EXISTING TABLE FOUND"
 
     with open(LOG_PATH, "a") as log_file:
@@ -46,10 +65,31 @@ def add_college(db, cursor, name):
     query = "insert into colleges(Name) values('{}');".format(name)
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = "[ERROR]: COULD NOT CREATE COLLEGE TABLE"
+    to_print = "[ERROR]: COULD NOT ADD TO COLLEGE TABLE"
     try:
         cursor.execute(query)
         to_print = "[INSERT] NEW ROW COLLEGE"
+        db.commit()
+    # add handling if college already exists
+    except mysql.Error as e:
+        console.print("⚠️ Something Went Wrong :-(")
+        to_print = f"[DB ERROR]: INSERTING\nMessage: {e}"
+
+    with open(LOG_PATH, "a") as log_file:
+        log_file.write(to_print + "\n")
+
+
+def create_application(db, cursor, studID, collegeID, deadline):
+    console = rich.console.Console()
+    query = "insert into applications(AdmnNo, CollegeID, Deadline) values('{}', {}, '{}');".format(
+        studID, collegeID, deadline
+    )
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = "[ERROR]: COULD NOT ADD TO APPLICATION TABLE"
+    try:
+        cursor.execute(query)
+        to_print = "[INSERT] NEW ROW APPLICATION"
         db.commit()
     # add handling if college already exists
     except mysql.Error as e:
@@ -71,18 +111,10 @@ def get_existing_colleges(cursor):
     return existing_choices
 
 
-# archived (not recommended for use in production)
-
-
-def exists(cursor, admmno):
-    global exists
-    exists = False
-    cursor.execute("select * from students where AdmnNO='{}';".format(admmno))
+def get_college_id(cursor, cname):
+    cursor.execute("select CollegeID from colleges where Name='{}';".format(cname))
     output = cursor.fetchone()
-    # print(output)
-    if output != None:
-        exists = True
-    return exists
+    return output[0]
 
 
 def get_pswdhash(cursor, admnno):
@@ -98,9 +130,23 @@ def login_display_student(db, cursor, admnno):
     table = rich.table.Table(
         show_header=True, header_style="bold magenta", show_footer=False
     )
-
+    table_two = rich.table.Table(
+        show_header=True, header_style="bold yellow", show_footer=False
+    )
+    table_three = rich.table.Table(
+        show_header=True, header_style="bold blue", show_footer=False
+    )
+    table_two.box = rich.box.MINIMAL
+    table_three.box = rich.box.MINIMAL
     cursor.execute("select * from students where AdmnNO='{}';".format(admnno))
     output = cursor.fetchone()
+    cursor.execute(
+        "SELECT colleges.CollegeID, colleges.Name, applications.deadline, applications.submitted FROM applications JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{}';".format(
+            admnno
+        )
+    )
+    watchlist = cursor.fetchall()
+
     table.add_column("Admn. No.")
     table.add_column("Student Name", width=18)
     table.add_column("Class/Section", justify="center")
@@ -114,7 +160,34 @@ def login_display_student(db, cursor, admnno):
         "Your password is securely hashed for verification.",
     )
 
-    console.print("\n\n[yellow]Here's what we got from you[/]\n", table)
+    table_two.title = "[not italic]📋[/] Counselor Documents"
+    table_two.add_column("Document Name")
+    table_two.add_column("Status", justify="center")
+    table_two.add_row("[bold]Final Transcript[/]", "✅" if output[4] == 1 else "❌")
+    table_two.add_row("[bold]Counselor LOR[/]", "✅" if output[4] == 1 else "❌")
+    table_two.add_row("[bold]Mid-Year Report[/]", "✅" if output[4] == 1 else "❌")
+    table_two.add_row("[bold]Predicted Marks[/]", "✅" if output[4] == 1 else "❌")
+
+    table_three.title = "[not italic]👀[/] Your Watchlist"
+    table_three.add_column("CollegeID", justify="left")
+    table_three.add_column("College Name")
+    table_three.add_column("Deadline")
+    table_three.add_column("Submitted?", justify="center")
+    for college in watchlist:
+        table_three.add_row(
+            f"[dim]{college[0]}[/]",
+            f"{college[1]}",
+            f"[bold green]{college[2]}[/]",
+            "✅" if college[3] == 1 else "❌",
+        )
+
+    console.print("\n\n[yellow]Here's what we got from you[/]\n")
+    console.print(table, justify="center")
+    ref_panel = helpers.deadlines_panel()
+    notif_panel = notifs.panel(cursor, output[3])
+    console.print(
+        Columns([Panel(table_two), Panel(table_three), ref_panel, notif_panel])
+    )
 
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
@@ -166,14 +239,12 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
         for k, v in coll.items():
             watchlist += "[bold green]{}[/] : {}\n".format(k, v)
 
-    new_user_query = (
-        "insert into students values ('{}', '{}', '{}', '{}', '{}');".format(
-            admnno,
-            answers["full_name"].title(),
-            answers["clsec"],
-            answers["stream"],
-            pswd_hash,
-        )
+    new_user_query = "insert into students(AdmnNO, Name, Class, Stream, PSWDHASH) values ('{}', '{}', '{}', '{}', '{}');".format(
+        admnno,
+        answers["full_name"].title(),
+        answers["clsec"],
+        answers["stream"],
+        pswd_hash,
     )
 
     table.add_column("Admn. No.")
@@ -218,6 +289,14 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     for c in college_toadd_list:
         name = list(c.values())[0]
         add_college(db, cursor, name)
+
+    # create a new records in applications table
+    for c in college_list:
+        for deadline, cname in c.items():
+            collegeID = helpers.get_single_record(
+                cursor, "CollegeID", "colleges", "Name", cname
+            )
+            create_application(db, cursor, admnno, collegeID, deadline)
 
     if confirmation["verify"] and confirmation["finish"]:
         try:

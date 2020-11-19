@@ -1,6 +1,6 @@
 # user.py: user logging, creation, edits, delete
 
-import os, rich
+import os, rich, prompts
 from PyInquirer import prompt
 import mysql.connector as mysql
 import prompts
@@ -21,23 +21,6 @@ def teacher_create_table(cursor):
 
     with open(LOG_PATH, "a") as log_file:
         log_file.write(to_print + "\n")
-
-
-# def session_create_table(cursor):
-#     console = rich.console.Console()
-#     query = "CREATE TABLE IF NOT EXISTS sessions (SeshNO INT AUTO_INCREMENT NOT NULL, "
-#     this_dir, this_filename = os.path.split(__file__)
-#     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-#     to_print = '[ERROR]: COULD NOT CREATE COLLEGE TABLE'
-#     try:
-#         cursor.execute(query)
-#         to_print = '[CREATE] TABLE COLLEGE'
-#     except Exception:
-#         console.print(':bulb: Existing college table found ')
-#         to_print = '[DB ERROR]: EXISTING TABLE FOUND'
-
-#     with open(LOG_PATH, 'a') as log_file:
-#         log_file.write(to_print+'\n')
 
 
 def exists(cursor, trno):
@@ -130,16 +113,16 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
 
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
-    to_print = "bruh"
-    global ok
-    ok = False
+    to_print = "[ERROR]: COULD NOT INSERT ROW"
+    global ok_admin
+    ok_admin = 'not-ok'
 
     if confirmation["verify"] and confirmation["finish"]:
         try:
             cursor.execute(query)
             to_print = "[INSERT] NEW ROW TEACHER"
             db.commit()
-            ok = True
+            ok_admin = "ok"
         except mysql.Error as e:
             console.print("⚠️ Something Went Wrong :-(")
             to_print = f"[DB ERROR]: INSERTING\nMessage: {e}"
@@ -151,7 +134,9 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     with open(LOG_PATH, "a") as log_file:
         log_file.write(to_print + "\n")
 
-    return ok, bool(answers["is_counselor"])
+    is_c = "ok" if bool(answers['is_counselor']) else 'not-ok'
+
+    return ok_admin, is_c
 
 
 def counselor_dash(cursor, trno):

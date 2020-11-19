@@ -1,43 +1,7 @@
 from rich.table import Table
-from rich.console import Console
-import os
+from rich.panel import Panel
+import os, rich
 import mysql.connector as mysql
-
-# we can format the tables later
-
-
-def help_counselor():
-    table = Table(title="Help", border_style="red")
-
-    table.add_column("Name of command", justify="left", style="cyan", no_wrap=True)
-    table.add_column("Usage", justify="left", style="yellow bold italic", no_wrap=True)
-    table.add_column("Function", justify="left", style="green", no_wrap=True)
-
-    table.add_row(
-        "search name",
-        "search name <student_name>",
-        "Searches for the name of the student",
-    )
-
-    console = Console()
-    console.print(table)
-
-
-def help_student(title):
-    table = Table(title=title, border_style="red")
-
-    table.add_column("Name of command", justify="left", style="cyan", no_wrap=True)
-    table.add_column("Usage", justify="left", style="yellow bold italic", no_wrap=True)
-    table.add_column("Function", justify="left", style="green", no_wrap=True)
-
-    table.add_row(
-        "search student name",
-        "search sname <student_name>",
-        "Searches for the name of the student",
-    )
-
-    console = Console()
-    console.print(table)
 
 
 def check_table_exists(table_name):
@@ -59,3 +23,27 @@ def check_table_exists(table_name):
             return False
     except:
         print("Some Error occurred.")
+
+
+def deadlines_panel():
+    table = Table(show_header=True, header_style="bold cyan", show_footer=False)
+    table.box = rich.box.MINIMAL
+    table.title = "[not italic]⏰[/] Deadline Reference"
+    table.add_column("Key", justify="center")
+    table.add_column("Timeline Description.")
+    table.add_row("[bold]US_EARLY1[/]", "[dim]November first-week[/]")
+    table.add_row("[bold]UK/US_EARLY2[/]", "[dim]Mid-November[/]")
+    table.add_row("[bold]US_UCs[/]", "[dim]November End[/]")
+    table.add_row("[bold]UK/US_REGULAR[/]", "[dim]January first-week[/]")
+    table.add_row("[bold]ND[/]", "[dim]Not Decided[/]")
+    return Panel(table)
+
+
+def get_single_record(cursor, cname, tname, conditional_cname, conditional_cvalue):
+    cursor.execute(
+        "select {} from {} where {}='{}';".format(
+            cname, tname, conditional_cname, conditional_cvalue
+        )
+    )
+    output = cursor.fetchone()
+    return output[0]
