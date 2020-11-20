@@ -73,7 +73,9 @@ def add_college(db, cursor, name):
     # add handling if college already exists (done)
     except mysql.Error as e:
         if e.errno == 1062:
-            console.print("⚡ [italic]College already exists in database.[/] [magenta]Linking to your new application[/]...")
+            console.print(
+                "⚡ [italic]College already exists in database.[/] [magenta]Linking to your new application[/]..."
+            )
         else:
             console.print("⚠️ Something Went Wrong :-(")
         to_print = f"[DB ERROR]: INSERTING\nMessage: {e}"
@@ -114,6 +116,25 @@ def delete_application(db, cursor, studID, collegeID):
     try:
         cursor.execute(query)
         to_print = "[DELETE] DROP ROW APPLICATION"
+        db.commit()
+    # add handling if college already exists
+    except mysql.Error as e:
+        console.print("⚠️ Something Went Wrong :-(")
+        to_print = f"[DB ERROR]: DELETING\nMessage: {e}"
+
+    with open(LOG_PATH, "a") as log_file:
+        log_file.write(to_print + "\n")
+
+
+def delete_applications(db, cursor, studID):
+    console = rich.console.Console()
+    query = "delete from applications where AdmnNO='{}';".format(studID)
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = "[ERROR]: COULD NOT DELETE FROM APPLICATION TABLE"
+    try:
+        cursor.execute(query)
+        to_print = "[DELETE] DROP ROWS APPLICATION"
         db.commit()
     # add handling if college already exists
     except mysql.Error as e:
@@ -188,6 +209,7 @@ def display_student_tables(db, cursor, admnno):
     table_three = rich.table.Table(
         show_header=True, header_style="bold blue", show_footer=False
     )
+    table.box = rich.box.MINIMAL
     table_two.box = rich.box.MINIMAL
     table_three.box = rich.box.MINIMAL
     cursor.execute("select * from students where AdmnNO='{}';".format(admnno))
@@ -203,13 +225,8 @@ def display_student_tables(db, cursor, admnno):
     table.add_column("Student Name", width=18)
     table.add_column("Class/Section", justify="center")
     table.add_column("Stream", justify="center")
-    table.add_column("Additional Info.", justify="left")
     table.add_row(
-        f"[bold]{admnno}[/]",
-        f"{output[1].title()}",
-        f"{output[2]}",
-        f"{output[3]}",
-        "Your password is securely hashed for verification.",
+        f"[bold]{admnno}[/]", f"{output[1].title()}", f"{output[2]}", f"{output[3]}",
     )
 
     table_two.title = "[not italic]📋[/] Counselor Documents"
@@ -234,12 +251,10 @@ def display_student_tables(db, cursor, admnno):
         )
 
     console.print("\n\n[bold]Your Student Dashboard[/]\n", justify="center")
-    console.print(table, justify="center")
     ref_panel = helpers.deadlines_panel()
     notif_panel = notifs.panel(cursor, output[3])
-    console.print(
-        Columns([Panel(table_two), Panel(table_three), ref_panel, notif_panel])
-    )
+    console.print(Columns([Panel(table_two), ref_panel, notif_panel], expand=True))
+    console.print(Columns([Panel(table), Panel(table_three)]), justify="center")
 
 
 def student_dashboard(db, cursor, admnno):
@@ -328,8 +343,12 @@ def student_dashboard(db, cursor, admnno):
                     dl,
                 ]
             )
-            cid = int(modify_deadline_ans['cid'])
-            cursor.execute("select Submitted from applications where CollegeID={} and AdmnNO='{}';".format(cid, admnno))
+            cid = int(modify_deadline_ans["cid"])
+            cursor.execute(
+                "select Submitted from applications where CollegeID={} and AdmnNO='{}';".format(
+                    cid, admnno
+                )
+            )
             sstatus = cursor.fetchone()
             try:
                 s = modify_deadline_ans["deadline"]
@@ -351,21 +370,51 @@ def student_dashboard(db, cursor, admnno):
                         "type": "confirm",
                         "name": "status",
                         "message": "Have you submitted your application to this college?",
-                        "default": True
+                        "default": True,
                     },
                 ]
             )
-            cid = int(modify_deadline_ans['cid'])
-            sstatus = int(modify_deadline_ans['status'])
-            cursor.execute("select Deadline from applications where CollegeID={} and AdmnNO='{}';".format(cid, admnno))
+            cid = int(modify_deadline_ans["cid"])
+            sstatus = int(modify_deadline_ans["status"])
+            cursor.execute(
+                "select Deadline from applications where CollegeID={} and AdmnNO='{}';".format(
+                    cid, admnno
+                )
+            )
             deadline = cursor.fetchone()[0]
-            modify_application(db, cursor, admnno, cid, deadline, sstatus, change_status=True)
+            modify_application(
+                db, cursor, admnno, cid, deadline, sstatus, change_status=True
+            )
             display_student_tables(db, cursor, admnno)
+
+        elif crud_ops["opr"] == "Delete your IntlApp account and exit.":
+            delete_confirm = prompt(
+                [
+                    {
+                        "type": "confirm",
+                        "name": "delete",
+                        "message": "Are you sure you want to delete all your applications and close your account? [IRREVERSIBLE]",
+                        "default": False,
+                    }
+                ]
+            )
+            if delete_confirm["delete"]:
+                cursor.execute("delete from students where AdmnNO='{}';".format(admnno))
+                delete_applications(db, cursor, admnno)
+                db.commit()
+                console.print(
+                    "\n😔 We're sorry to you go.\n\n[italic red]Your account was deleted.[/]",
+                    justify="center",
+                )
+                see_crud = False
+                console.print("\n\n[dim]Exiting the appplication...[/]")
 
         elif crud_ops["opr"] == "Exit IntlApp Dashboard":
             see_crud = False
             console.print("\n\n[dim]Exiting the appplication...[/]")
 
+        else:
+            see_crud = False
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
     admnno = admnno.upper()

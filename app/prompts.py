@@ -69,9 +69,10 @@ def deadline_prompt():
             "Mid-November (UK/US_EARLY2)",
             "November End (US_UCs)",
             "January first-week (UK/US_REGULAR)",
-            "Indian Private Colleges (INDIA_PRIV)"
+            "Indian Private Colleges (INDIA_PRIV)",
             "Not decided (ND)",
         ],
+        "when": lambda answers: answers["add_new"]
     }
     return dl
 
@@ -187,8 +188,9 @@ def get_student_options():
                 "Change the deadline of a college",
                 "Change your application status for a college",
                 Separator("=== Account Actions ==="),
+                "Hide this prompt",
                 "Exit IntlApp Dashboard",
-                "Delete your account and exit.",
+                "Delete your IntlApp account and exit.",
             ],
         }
     ]
