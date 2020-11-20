@@ -134,9 +134,8 @@ def main():
                 if output != None:
                     exists = True
                 if exists:
-                    console.print(
-                        ":+1: Existing Record found.\n\n[u green] Login to your account[/u green]\n"
-                    )
+                    console.print(":+1: Existing Record found.\n", justify="center")
+                    console.print("[b]Login to your account[/b]\n", justify="center")
                     password = getpass(prompt="Enter your password: ")
                     password = password.encode("ascii")
                     pswd_hash = user.get_pswdhash(cursor, admnno)
@@ -187,8 +186,8 @@ def main():
             console.print("✅ Teacher Login Successful")
             if is_counselor:
                 admin.counselor_dash(cursor, trno.upper())
-            else:
-                print('todo')
+            # else:
+            #     print('todo')
     else:
         console.print("⚠️  Something went wrong... Please try again.")
     # except:

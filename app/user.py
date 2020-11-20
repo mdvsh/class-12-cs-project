@@ -181,7 +181,7 @@ def login_display_student(db, cursor, admnno):
             "✅" if college[3] == 1 else "❌",
         )
 
-    console.print("\n\n[yellow]Here's what we got from you[/]\n")
+    console.print("\n\n[bold]Your Student Dashboard[/]\n", justify="center")
     console.print(table, justify="center")
     ref_panel = helpers.deadlines_panel()
     notif_panel = notifs.panel(cursor, output[3])

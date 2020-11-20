@@ -26,24 +26,34 @@ def create_table(cursor):
 # todo: change color of notificaitons based on time left to event: RED (<=2 DAYS), YELLOW (<=10 DAYS), GREEN (else)
 
 
-def panel(cursor, stream, panel=True):
+def panel(cursor, stream, panel=True, admin=False):
     console = rich.console.Console()
-    query = "select date_format(Date, '%d %M %Y'), Description from notifications where Audience='{}';".format(
-        stream
-    )
+    if admin:
+        query = "select date_format(Date, '%d %M %Y'), Description from notifications;"
+    else:
+        query = "select date_format(Date, '%d %M %Y'), Description from notifications where Audience='{}';".format(
+            stream
+        )
     cursor.execute(query)
     notifications = cursor.fetchall()
     table = rich.table.Table(
         show_header=True, header_style="bold green", show_footer=False
     )
     table.box = rich.box.MINIMAL
-    table.title = "[not italic]🔔[/] Your Notifications"
+    table.title = (
+        "[not italic]🔔[/] Notifications / Scheduled Sessions "
+        if admin
+        else "[not italic]🔔[/] Your Notifications"
+    )
     table.add_column("Date of Action", justify="center")
     table.add_column("Description")
     if len(notifications) != 0:
         for notif in notifications:
             table.add_row(f"[dim]{notif[0]}[/]", f"{notif[1]}")
     else:
-        table.add_row(":+1:", "You have no pending notifications.")
+        if admin:
+            table.add_row(":+1:", "You have posted no notifications / sessions.")
+        else:
+            table.add_row(":+1:", "You have no pending notifications.")
 
     return Panel(table) if panel else console.print(table)

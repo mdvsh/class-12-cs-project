@@ -1,10 +1,11 @@
 # user.py: user logging, creation, edits, delete
 
-import os, rich, prompts
+import os, rich
 from PyInquirer import prompt
 import mysql.connector as mysql
-import prompts
-
+import prompts, notifs, helpers
+from rich.columns import Columns
+from rich.panel import Panel
 
 def teacher_create_table(cursor):
     console = rich.console.Console()
@@ -91,8 +92,8 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
             "Your password is hashed securely with bcrypt.",
         )
 
-    console.print("\n\n[yellow]Here's what we got from you[/]\n", table)
-
+    console.print("\n\n[bold]Your Admin Dashboard[/]\n", justify="center")
+    console.print(table, justify="center")
     # inquirer to confrim user details before adding
     confirm = [
         {
@@ -141,13 +142,31 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
 
 def counselor_dash(cursor, trno):
     console = rich.console.Console()
+    ttable = rich.table.Table(show_header=True, show_footer=False, header_style="bold magenta")
+    ttable.box = rich.box.SIMPLE_HEAD
     cursor.execute("SELECT COUNT(*) FROM students")
     number = cursor.fetchone()[0]
-    print()
     console.print(
-        f"[bold green]Students Registered[/bold green]: [magenta]{number}[magenta]"
+        f"\n[bold green]Students Registered[/bold green]: [magenta]{number}[magenta]\n\n"
     )
-    print()
+    cursor.execute(f"SELECT TrNO, Name, Subject, IS_COUNSELOR from teachers where TrNO='{trno}';")
+    output = cursor.fetchone()
+    ttable.title = "[not italic]📋[/] Your Login Details"
+    ttable.add_column("ID")
+    ttable.add_column("Teacher Name", width=18)
+    ttable.add_column("Subject", justify="center")
+    ttable.add_column("Counselor?", justify="center")
+    ttable.add_row(
+        f"[bold]{trno}[/]",
+        f"{output[1].title()}",
+        f"{output[2]}" if output[2] != None else '[italic]--NA--[/]',
+        "✅" if bool(output[3]) else '❌',
+    )
+    notif_panel = notifs.panel(cursor, 'bruh', admin=True)
+    ref_panel = helpers.deadlines_panel()
+    console.print(
+        Columns([notif_panel, Panel(ttable), ref_panel])
+    )
 
     while True:
         optionAnswer = prompt(prompts.get_admin_options())
@@ -172,7 +191,7 @@ def counselor_dash(cursor, trno):
                     f"{record[0]}", f"{record[1]}", f"{record[2]}", f"{record[3]}"
                 )
 
-                console.print(table)
+                console.print(table, justify='center')
 
             elif searchMethodAnswer["method"] == "Search by Class-Section":
                 s_clsec = str(input("Enter the Class and section (eg, 12J): "))
@@ -193,7 +212,7 @@ def counselor_dash(cursor, trno):
                         f"{record[0]}", f"{record[1]}", f"{record[2]}", f"{record[3]}"
                     )
 
-                console.print(table)
+                console.print(table, justify='center')
 
             elif searchMethodAnswer["method"] == "Search by Stream":
                 s_stream_prompt = [
@@ -233,7 +252,7 @@ def counselor_dash(cursor, trno):
                         f"{record[0]}", f"{record[1]}", f"{record[2]}", f"{record[3]}"
                     )
 
-                console.print(table)
+                console.print(table, justify='center')
 
             elif searchMethodAnswer["method"] == "Search by Deadline":
                 s_deadline_prompt = [
@@ -271,7 +290,7 @@ def counselor_dash(cursor, trno):
                         f"{record[0]}", f"{record[1]}", f"{record[2]}", f"{record[3]}"
                     )
 
-                console.print(table)
+                console.print(table, justify='center')
         # elif optionAnswer["option"] == "Update status of a student":
         #     print("todo")
         elif optionAnswer["option"] == "Add a college to the database":
