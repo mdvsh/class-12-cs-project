@@ -169,3 +169,24 @@ def get_admin_search_method():
         }
     ]
     return searchMethods
+
+def get_student_options():
+    options = [
+        {
+            "type": "list",
+            "name": "opr",
+            "message": "What would you like to do?",
+            "choices": [
+                Separator("=== Watchlist Actions ==="),
+                "Add a college",
+                "Remove a college",
+                Separator("=== Application Actions ==="),
+                "Change the deadline of a college",
+                "Change your application status for a college",
+                Separator("=== Account Actions ==="),
+                "Exit IntlApp Dashboard",
+                "Delete your account and exit.",
+            ]
+        }
+    ]
+    return options

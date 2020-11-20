@@ -181,7 +181,7 @@ def main():
                 print("catch something maybe")
         if login and inp == "2":
             console.print("✅ Student Login Successful")
-            user.login_display_student(db, cursor, admnno)
+            user.student_dashboard(db, cursor, admnno)
         elif login and inp == "1":
             console.print("✅ Teacher Login Successful")
             if is_counselor:

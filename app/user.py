@@ -100,6 +100,27 @@ def create_application(db, cursor, studID, collegeID, deadline):
         log_file.write(to_print + "\n")
 
 
+def delete_application(db, cursor, studID, collegeID):
+    console = rich.console.Console()
+    query = "delete from applications where AdmnNO='{}' and CollegeID={};".format(
+        studID, collegeID
+    )
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = "[ERROR]: COULD NOT DELETE FROM APPLICATION TABLE"
+    try:
+        cursor.execute(query)
+        to_print = "[DELETE] DROP ROW APPLICATION"
+        db.commit()
+    # add handling if college already exists
+    except mysql.Error as e:
+        console.print("⚠️ Something Went Wrong :-(")
+        to_print = f"[DB ERROR]: DELETING\nMessage: {e}"
+
+    with open(LOG_PATH, "a") as log_file:
+        log_file.write(to_print + "\n")
+
+
 def get_existing_colleges(cursor):
     existing_choices = [
         Separator("== Colleges (Already in Database) =="),
@@ -124,7 +145,7 @@ def get_pswdhash(cursor, admnno):
     return output[0].encode("ascii")
 
 
-def login_display_student(db, cursor, admnno):
+def display_student_tables(db, cursor, admnno):
     admnno = admnno.upper()
     console = rich.console.Console()
     table = rich.table.Table(
@@ -188,6 +209,85 @@ def login_display_student(db, cursor, admnno):
     console.print(
         Columns([Panel(table_two), Panel(table_three), ref_panel, notif_panel])
     )
+
+
+def student_dashboard(db, cursor, admnno):
+    # crud ops
+    admnno = admnno.upper()
+    console = rich.console.Console()
+    display_student_tables(db, cursor, admnno)
+    global see_crud
+    see_crud = True
+    while see_crud:
+        crud_ops = prompt(prompts.get_student_options())
+        if crud_ops["opr"] == "Add a college":
+            global add
+            add, college_list = True, []
+            while add:
+                add_college_ans = prompt(prompts.get_college_questions())
+                try:
+                    s = add_college_ans["deadline"]
+                    cd = {}
+                    cd[s[s.find("(") + 1 : s.find(")")]] = add_college_ans[
+                        "new_college"
+                    ].title()
+                    college_list.append(cd)
+                except KeyError:
+                    pass
+                more_college = prompt(
+                    [
+                        {
+                            "type": "confirm",
+                            "message": "Continue adding another college?",
+                            "name": "more",
+                            "default": True,
+                        }
+                    ]
+                )
+                add = more_college["more"]
+            for c in college_list:
+                name = list(c.values())[0]
+                add_college(db, cursor, name)
+            for c in college_list:
+                for deadline, cname in c.items():
+                    collegeID = helpers.get_single_record(
+                        cursor, "CollegeID", "colleges", "Name", cname
+                    )
+                    delete_application(db, cursor, admnno, collegeID)
+            display_student_tables(db, cursor, admnno)
+
+        elif crud_ops["opr"] == "Remove a college":
+            global add_rlist
+            add_rlist, cid_list = True, []
+            while add_rlist:
+                remove_college_ans = prompt(
+                    [
+                        {
+                            "type": "input",
+                            "name": "cid",
+                            "message": "Enter CollegeID of college to remove from watchlist",
+                        }
+                    ]
+                )
+                cid_list.append(int(remove_college_ans["cid"]))
+                more_college = prompt(
+                    [
+                        {
+                            "type": "confirm",
+                            "message": "Continue adding another college to remove from watchlist?",
+                            "name": "more",
+                            "default": True,
+                        }
+                    ]
+                )
+                add_rlist = more_college["more"]
+            for cid in cid_list:
+                delete_application(db, cursor, admnno, cid)
+            display_student_tables(db, cursor, admnno)
+
+        elif crud_ops["opr"] == "Exit IntlApp Dashboard":
+            see_crud = False
+            console.print("\n\n[dim red]Hiding the prompt[/]")
 
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
