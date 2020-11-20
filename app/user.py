@@ -70,9 +70,12 @@ def add_college(db, cursor, name):
         cursor.execute(query)
         to_print = "[INSERT] NEW ROW COLLEGE"
         db.commit()
-    # add handling if college already exists
+    # add handling if college already exists (done)
     except mysql.Error as e:
-        console.print("⚠️ Something Went Wrong :-(")
+        if e.errno == 1062:
+            console.print("⚡ [italic]College already exists in database.[/] [magenta]Linking to your new application[/]...")
+        else:
+            console.print("⚠️ Something Went Wrong :-(")
         to_print = f"[DB ERROR]: INSERTING\nMessage: {e}"
 
     with open(LOG_PATH, "a") as log_file:
@@ -111,6 +114,34 @@ def delete_application(db, cursor, studID, collegeID):
     try:
         cursor.execute(query)
         to_print = "[DELETE] DROP ROW APPLICATION"
+        db.commit()
+    # add handling if college already exists
+    except mysql.Error as e:
+        console.print("⚠️ Something Went Wrong :-(")
+        to_print = f"[DB ERROR]: DELETING\nMessage: {e}"
+
+    with open(LOG_PATH, "a") as log_file:
+        log_file.write(to_print + "\n")
+
+
+def modify_application(
+    db, cursor, studID, collegeID, deadline, sstatus, change_status=False
+):
+    console = rich.console.Console()
+    if change_status:
+        query = "update applications set Deadline='{}', Submitted={} where CollegeID={} and AdmnNO='{}';".format(
+            deadline, sstatus, collegeID, studID
+        )
+    else:
+        query = "update applications set Deadline='{}' where CollegeID={} and AdmnNO='{}';".format(
+            deadline, collegeID, studID
+        )
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = "[ERROR]: COULD NOT MODIFY ROW FROM APPLICATION TABLE"
+    try:
+        cursor.execute(query)
+        to_print = "[UPDATE] MODIFY ROW APPLICATION"
         db.commit()
     # add handling if college already exists
     except mysql.Error as e:
@@ -253,7 +284,7 @@ def student_dashboard(db, cursor, admnno):
                     collegeID = helpers.get_single_record(
                         cursor, "CollegeID", "colleges", "Name", cname
                     )
-                    delete_application(db, cursor, admnno, collegeID)
+                    create_application(db, cursor, admnno, collegeID, deadline)
             display_student_tables(db, cursor, admnno)
 
         elif crud_ops["opr"] == "Remove a college":
@@ -285,9 +316,55 @@ def student_dashboard(db, cursor, admnno):
                 delete_application(db, cursor, admnno, cid)
             display_student_tables(db, cursor, admnno)
 
+        elif crud_ops["opr"] == "Change the deadline of a college":
+            dl = prompts.deadline_prompt()
+            modify_deadline_ans = prompt(
+                [
+                    {
+                        "type": "input",
+                        "name": "cid",
+                        "message": "What's the CollegeID of the college you want to change dealdine of?",
+                    },
+                    dl,
+                ]
+            )
+            cid = int(modify_deadline_ans['cid'])
+            cursor.execute("select Submitted from applications where CollegeID={} and AdmnNO='{}';".format(cid, admnno))
+            sstatus = cursor.fetchone()
+            try:
+                s = modify_deadline_ans["deadline"]
+                new_deadline = s[s.find("(") + 1 : s.find(")")]
+                modify_application(db, cursor, admnno, cid, new_deadline, sstatus[0])
+            except KeyError:
+                pass
+            display_student_tables(db, cursor, admnno)
+
+        elif crud_ops["opr"] == "Change your application status for a college":
+            modify_deadline_ans = prompt(
+                [
+                    {
+                        "type": "input",
+                        "name": "cid",
+                        "message": "What's the CollegeID of the college you want to change status of?",
+                    },
+                    {
+                        "type": "confirm",
+                        "name": "status",
+                        "message": "Have you submitted your application to this college?",
+                        "default": True
+                    },
+                ]
+            )
+            cid = int(modify_deadline_ans['cid'])
+            sstatus = int(modify_deadline_ans['status'])
+            cursor.execute("select Deadline from applications where CollegeID={} and AdmnNO='{}';".format(cid, admnno))
+            deadline = cursor.fetchone()[0]
+            modify_application(db, cursor, admnno, cid, deadline, sstatus, change_status=True)
+            display_student_tables(db, cursor, admnno)
+
         elif crud_ops["opr"] == "Exit IntlApp Dashboard":
             see_crud = False
-            console.print("\n\n[dim red]Hiding the prompt[/]")
+            console.print("\n\n[dim]Exiting the appplication...[/]")
 
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):

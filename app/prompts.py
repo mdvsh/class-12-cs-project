@@ -59,7 +59,25 @@ def get_admin_questions():
     return questions
 
 
+def deadline_prompt():
+    dl = {
+        "type": "list",
+        "name": "deadline",
+        "message": "What's your college applcation deadline",
+        "choices": [
+            "November first-week (US_EARLY1)",
+            "Mid-November (UK/US_EARLY2)",
+            "November End (US_UCs)",
+            "January first-week (UK/US_REGULAR)",
+            "Indian Private Colleges (INDIA_PRIV)"
+            "Not decided (ND)",
+        ],
+    }
+    return dl
+
+
 def get_college_questions():
+    dl = deadline_prompt()
     college_questions = [
         {
             "type": "confirm",
@@ -73,30 +91,14 @@ def get_college_questions():
             "message": "What's your college/university name",
             "when": lambda answers: answers["add_new"],
         },
-        {
-            "type": "list",
-            "name": "deadline",
-            "message": "What's your college applcation deadline",
-            "choices": [
-                "November first-week (US_EARLY1)",
-                "Mid-November (UK/US_EARLY2)",
-                "November End (US_UCs)",
-                "January first-week (UK/US_REGULAR)",
-                "Not decided (ND)",
-            ],
-            "when": lambda answers: answers["add_new"],
-        },
+        dl,
     ]
     return college_questions
 
 
 def get_admin_questions():
     admin_questions = [
-        {
-            "type": "input",
-            "name": "full_name",
-            "message": "What's your name",
-        },
+        {"type": "input", "name": "full_name", "message": "What's your name",},
         {
             "type": "confirm",
             "name": "is_counselor",
@@ -170,6 +172,7 @@ def get_admin_search_method():
     ]
     return searchMethods
 
+
 def get_student_options():
     options = [
         {
@@ -186,7 +189,7 @@ def get_student_options():
                 Separator("=== Account Actions ==="),
                 "Exit IntlApp Dashboard",
                 "Delete your account and exit.",
-            ]
+            ],
         }
     ]
     return options
