@@ -6,7 +6,8 @@ from PyInquirer import prompt, Separator
 import mysql.connector as mysql
 from rich.columns import Columns
 from rich.panel import Panel
-import helpers, prompts, notifs
+import prompts, notifs
+import helpers
 
 
 def student_create_table(cursor):
@@ -62,7 +63,7 @@ def apps_create_table(cursor):
 
 def add_college(db, cursor, name):
     console = rich.console.Console()
-    query = "insert into colleges(Name) values('{}');".format(name)
+    query = "insert into colleges(CollegeName) values('{}');".format(name)
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
     to_print = "[ERROR]: COULD NOT ADD TO COLLEGE TABLE"
@@ -177,7 +178,7 @@ def get_existing_colleges(cursor):
     existing_choices = [
         Separator("== Colleges (Already in Database) =="),
     ]
-    cursor.execute("select Name from colleges;")
+    cursor.execute("select CollegeName from colleges;")
     output = cursor.fetchall()
     for college_t in output:
         existing_choices.append({"name": college_t[0]})
@@ -215,7 +216,7 @@ def display_student_tables(db, cursor, admnno):
     cursor.execute("select * from students where AdmnNO='{}';".format(admnno))
     output = cursor.fetchone()
     cursor.execute(
-        "SELECT colleges.CollegeID, colleges.Name, applications.deadline, applications.submitted FROM applications JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{}';".format(
+        "SELECT colleges.CollegeID, colleges.CollegeName, applications.deadline, applications.submitted FROM applications JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{}';".format(
             admnno
         )
     )
@@ -226,7 +227,10 @@ def display_student_tables(db, cursor, admnno):
     table.add_column("Class/Section", justify="center")
     table.add_column("Stream", justify="center")
     table.add_row(
-        f"[bold]{admnno}[/]", f"{output[1].title()}", f"{output[2]}", f"{output[3]}",
+        f"[bold]{admnno}[/]",
+        f"{output[1].title()}",
+        f"{output[2]}",
+        f"{output[3]}",
     )
 
     table_two.title = "[not italic]📋[/] Counselor Documents"
@@ -297,7 +301,7 @@ def student_dashboard(db, cursor, admnno):
             for c in college_list:
                 for deadline, cname in c.items():
                     collegeID = helpers.get_single_record(
-                        cursor, "CollegeID", "colleges", "Name", cname
+                        cursor, "CollegeID", "colleges", "CollegeName", cname
                     )
                     create_application(db, cursor, admnno, collegeID, deadline)
             display_student_tables(db, cursor, admnno)
@@ -332,7 +336,7 @@ def student_dashboard(db, cursor, admnno):
             display_student_tables(db, cursor, admnno)
 
         elif crud_ops["opr"] == "Change the deadline of a college":
-            dl = prompts.deadline_prompt()
+
             modify_deadline_ans = prompt(
                 [
                     {
@@ -340,7 +344,19 @@ def student_dashboard(db, cursor, admnno):
                         "name": "cid",
                         "message": "What's the CollegeID of the college you want to change dealdine of?",
                     },
-                    dl,
+                    {
+                        "type": "list",
+                        "name": "deadline",
+                        "message": "What's your college applcation deadline",
+                        "choices": [
+                            "November first-week (US_EARLY1)",
+                            "Mid-November (UK/US_EARLY2)",
+                            "November End (US_UCs)",
+                            "January first-week (UK/US_REGULAR)",
+                            "Indian Private Colleges (INDIA_PRIV)",
+                            "Not decided (ND)",
+                        ],
+                    },
                 ]
             )
             cid = int(modify_deadline_ans["cid"])
@@ -415,6 +431,7 @@ def student_dashboard(db, cursor, admnno):
 
         else:
             see_crud = False
+
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
     admnno = admnno.upper()
@@ -520,7 +537,7 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     for c in college_list:
         for deadline, cname in c.items():
             collegeID = helpers.get_single_record(
-                cursor, "CollegeID", "colleges", "Name", cname
+                cursor, "CollegeID", "colleges", "CollegeName", cname
             )
             create_application(db, cursor, admnno, collegeID, deadline)
 

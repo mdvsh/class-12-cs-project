@@ -3,7 +3,11 @@ from PyInquirer import Separator
 
 def get_student_questions():
     questions = [
-        {"type": "input", "name": "full_name", "message": "What's your name",},
+        {
+            "type": "input",
+            "name": "full_name",
+            "message": "What's your name",
+        },
         {
             "type": "input",
             "name": "clsec",
@@ -15,45 +19,6 @@ def get_student_questions():
             "name": "stream",
             "message": "What's your stream ?",
             "choices": ["PCB", "PCMC", "PCMB", "PCME", "COMM.", "HUMA.", "OTHER"],
-        },
-    ]
-    return questions
-
-
-def get_admin_questions():
-    questions = [
-        {"type": "input", "name": "full_name", "message": "What's your name",},
-        {
-            "type": "confirm",
-            "name": "is_counselor",
-            "message": "Are you the counselor?",
-            "default": False,
-        },
-        {
-            "type": "list",
-            "name": "subject",
-            "message": "What subject do you teach?",
-            "choices": [
-                "Accountancy",
-                "Biology",
-                "Biotechnology",
-                "BusinessStudies",
-                "Chemistry",
-                "ComputerScience",
-                "Economics",
-                "English",
-                "FineArts",
-                "Geography",
-                "Hindi",
-                "Mathematics",
-                "PerformingArts",
-                "PE",
-                "Physics",
-                "Political Science",
-                "Sanskrit" "French",
-                "German",
-            ],
-            "when": lambda answers: not answers["is_counselor"],
         },
     ]
     return questions
@@ -72,7 +37,7 @@ def deadline_prompt():
             "Indian Private Colleges (INDIA_PRIV)",
             "Not decided (ND)",
         ],
-        "when": lambda answers: answers["add_new"]
+        "when": lambda answers: answers["add_new"],
     }
     return dl
 
@@ -99,7 +64,11 @@ def get_college_questions():
 
 def get_admin_questions():
     admin_questions = [
-        {"type": "input", "name": "full_name", "message": "What's your name",},
+        {
+            "type": "input",
+            "name": "full_name",
+            "message": "What's your name",
+        },
         {
             "type": "confirm",
             "name": "is_counselor",
@@ -127,7 +96,8 @@ def get_admin_questions():
                 "PE",
                 "Physics",
                 "Political Science",
-                "Sanskrit" "French",
+                "Sanskrit",
+                "French",
                 "German",
             ],
             "when": lambda answers: not answers["is_counselor"],
