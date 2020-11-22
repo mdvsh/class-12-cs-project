@@ -222,6 +222,7 @@ def display_student_tables(db, cursor, admnno):
     )
     watchlist = cursor.fetchall()
 
+    table.title = "[not italic]👤[/] Your Info"
     table.add_column("Admn. No.")
     table.add_column("Student Name", width=18)
     table.add_column("Class/Section", justify="center")
@@ -429,9 +430,11 @@ def student_dashboard(db, cursor, admnno):
             see_crud = False
             console.print("\n\n[dim]Exiting the appplication...[/]")
 
-        else:
-            see_crud = False
-
+        elif crud_ops['opr'] == 'Hide this prompt':
+            console.print(':eyes: The prompt is hidden.\n')
+            show = str(input("Press enter to show it again:"))
+            if len(show) == 0:
+                see_crud = True
 
 def student_create_prompt(db, cursor, admnno, pswd_hash):
     admnno = admnno.upper()

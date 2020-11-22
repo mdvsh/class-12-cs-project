@@ -124,7 +124,12 @@ def main():
             elif inp == "2":
                 global admnno
                 global exists
-                admnno = str(input("Enter your admission number: "))
+                while True:
+                    admnno = str(input("Enter your admission number ( {v/e/r}20000 ): "))
+                    if len(admnno) == 6:
+                        break
+                    else:
+                        console.print(":pensive: Invalid input. [italic] Please try again:")
                 console.print("🔎 Searching for existing record in the database...")
                 exists = False
                 cursor.execute(
