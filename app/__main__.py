@@ -68,13 +68,15 @@ def main():
                 global exist
                 global is_counselor
                 console.print("Enter the [b]Admin Credentials[/b]\n")
-                trno = str(input("Enter your Staff/Teacher ID:"))
+                trno = str(input("Enter your Staff/Teacher ID: "))
                 console.print("\n\n🔎 Searching for existing record in the database...")
                 is_counselor, exist = False, False
-                cursor.execute("select IS_COUNSELOR from teachers where TrNO='{}';".format(trno))
+                cursor.execute(
+                    "select IS_COUNSELOR from teachers where TrNO='{}';".format(trno)
+                )
                 output = cursor.fetchone()
                 if output != None:
-                    exist, is_counselor = True, True
+                    exist, is_counselor = True, output[0]
                 if exist:
                     console.print(":+1: Existing Record found.\n", justify="center")
                     console.print("[b]Login to your account[/b]\n", justify="center")
@@ -116,8 +118,8 @@ def main():
                         )
                         if ok == "ok":
                             login = True
-                            if is_c == 'ok':
-                                admin.counselor_dash(cursor, trno.upper())
+                            if is_c == "ok":
+                                admin.counselor_dash(db, cursor, trno.upper())
                             print("todo...")
                         else:
                             break
@@ -190,9 +192,9 @@ def main():
         elif login and inp == "1":
             console.print("✅ Teacher Login Successful")
             if is_counselor:
-                admin.counselor_dash(cursor, trno.upper())
-            # else:
-            #     print('todo')
+                admin.counselor_dash(db, cursor, trno.upper())
+            else:
+                print('todo')
     else:
         console.print("⚠️  Something went wrong... Please try again.")
     # except:
