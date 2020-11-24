@@ -18,7 +18,7 @@ def get_student_questions():
             "type": "list",
             "name": "stream",
             "message": "What's your stream ?",
-            "choices": ["PCB", "PCMC", "PCMB", "PCME", "COMM.", "HUMA.", "OTHER"],
+            "choices": ["PCB", "PCMC", "PCMB", "PCME", "COMM.", "HUMA.", "ARTS"],
         },
     ]
     return questions
@@ -113,12 +113,16 @@ def get_admin_options():
             "name": "option",
             "message": "What would you like to do?",
             "choices": [
+                Separator("=== Student Actions ==="),
                 "Search for a student",
                 "Update status of a student",
+                Separator("=== College Actions ==="),
                 "Add a college to the database",
                 "Delete a college from the database",
-                "Add a session",
-                "Cancel a session",
+                Separator("=== Session/Announcement Actions"),
+                "Add a session/announcement",
+                "Cancel a session/announcement",
+                Separator("=== Account Actions"),
                 "Quit",
             ],
         }

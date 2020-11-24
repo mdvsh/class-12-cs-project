@@ -456,9 +456,6 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
 
     questions = prompts.get_student_questions()
     answers = prompt(questions)
-    if answers["stream"] == "OTHER":
-        other_stream = str(input("Enter other stream (5 letters): "))
-        answers["stream"] = other_stream
     # college prompt
 
     college_questions = prompts.get_college_questions()

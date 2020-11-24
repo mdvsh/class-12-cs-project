@@ -230,7 +230,7 @@ def counselor_dash(db, cursor, trno):
                             "PCME",
                             "COMM.",
                             "HUMA.",
-                            "OTHER",
+                            "ARTS",
                         ],
                     },
                 ]
@@ -365,6 +365,30 @@ def counselor_dash(db, cursor, trno):
                 f"UPDATE applications SET Submitted = {sstatus} WHERE AdmnNO = '{sadmnno}' AND CollegeID = {cID}"
             )
             db.commit()
+
+            cursor.execute(
+                f"SELECT applications.AdmnNO, students.Name, applications.CollegeID, colleges.CollegeName, applications.Submitted FROM students JOIN applications ON students.AdmnNO = applications.AdmnNO JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{sadmnno}'"
+            )
+            records = cursor.fetchall()
+
+            table = rich.table.Table(
+                show_header=True, header_style="bold magenta", show_footer=False
+            )
+            table.add_column("Admn. No")
+            table.add_column("Student Name", width=20)
+            table.add_column("College ID", justify="left")
+            table.add_column("College Name")
+            table.add_column("Submitted")
+
+            for record in records:
+                table.add_row(
+                    f"{record[0]}",
+                    f"{record[1]}",
+                    f"{record[2]}",
+                    f"{record[3]}",
+                    "❌" if record[4] == 0 else "✅",
+                )
+            console.print(table, justify="center")
             print()
             console.print("[bold green]Status updated.[/]")
             print()
@@ -465,6 +489,123 @@ def counselor_dash(db, cursor, trno):
                     console.print("[red]Could not delete college[/]")
             else:
                 console.print("[blue]College not deleted[/]")
+
+        elif optionAnswer["option"] == "Add a session/announcement":
+            add_session = prompt(
+                [
+                    {
+                        "type": "input",
+                        "name": "description",
+                        "message": "Description of the Session/Announcement (max 255 characters):",
+                    },
+                    {
+                        "type": "input",
+                        "name": "date",
+                        "message": "Enter the date (or deadline) in YYYY-MM-DD format:",
+                        "default": "2020-12-31",
+                    },
+                    {
+                        "type": "list",
+                        "name": "audi",
+                        "message": "Select a Stream or Group",
+                        "choices": [
+                            Separator("=== Streams ==="),
+                            "PCB",
+                            "PCMC",
+                            "PCMB",
+                            "PCME",
+                            "COMM.",
+                            "HUMA.",
+                            "ARTS",
+                            Separator("=== Groups ==="),
+                            "Science (Medical)",
+                            "Science (Non-Medical)",
+                            "Science (All)",
+                            "Non-Science",
+                            "All Streams",
+                        ],
+                    },
+                    {
+                        "type": "confirm",
+                        "name": "seshConfirm",
+                        "message": "Confirm?",
+                        "default": True,
+                    },
+                ]
+            )
+            audi = add_session["audi"]
+            desc = add_session["description"]
+            dat = add_session["date"]
+            audiList = [audi]
+            if audi == "Science (Medical)":
+                audiList = ["PCB", "PCMB"]
+            elif audi == "Science (Non-Medical)":
+                audiList = ["PCMB", "PCMC", "PCME"]
+            elif audi == "Science (All)":
+                audiList = ["PCB", "PCMB", "PCMC", "PCME"]
+            elif audi == "Non-Science":
+                audiList = ["COMM.", "HUMA.", "ARTS"]
+            elif audi == "All Streams":
+                audiList = ["PCB", "PCMC", "PCMB", "PCME", "COMM.", "HUMA.", "ARTS"]
+
+            cursor.execute("SELECT COALESCE(MAX(GroupID) + 1, 1) FROM notifications")
+            grpID = str(cursor.fetchone()[0])
+
+            if add_session["seshConfirm"]:
+                for s in audiList:
+                    cursor.execute(
+                        f"INSERT INTO notifications (Audience, Date, Description, GroupID) VALUES ('{s}', '{dat}', '{desc}', {grpID})"
+                    )
+                db.commit()
+                console.print("[bold green]Session added.[/]")
+            else:
+                console.print("[blue]Session not added[/]")
+
+        elif optionAnswer["option"] == "Cancel a session/announcement":
+            stable = rich.table.Table(
+                show_header=True, header_style="bold magenta", show_footer=False
+            )
+            stable.box = rich.box.MINIMAL
+            stable.title = "[not italic]🔔[/] Notifications"
+            stable.add_column("Notif. ID")
+            stable.add_column("Date")
+            stable.add_column("Description")
+            stable.add_column("Stream")
+            cursor.execute(
+                "SELECT GroupID, Date, Description, Audience FROM notifications"
+            )
+            records = cursor.fetchall()
+            for record in records:
+                stable.add_row(
+                    f"{record[0]}", f"{record[1]}", f"{record[2]}", f"{record[3]}"
+                )
+
+            console.print(stable, justify="center")
+
+            cancel_session = prompt(
+                [
+                    {
+                        "type": "input",
+                        "name": "notifID",
+                        "message": "Enter the ID of the notification you would like to cancel/delete:",
+                    },
+                    {
+                        "type": "confirm",
+                        "name": "notifConfirm",
+                        "message": "Confirm?",
+                        "default": True,
+                    },
+                ]
+            )
+
+            if cancel_session["notifConfirm"]:
+                cursor.execute(
+                    f"DELETE FROM notifications WHERE GroupID = '{cancel_session['notifID']}'"
+                )
+                db.commit()
+                console.print("[bold green]Session deleted.[/]")
+            else:
+                console.print("[blue]Session not deleted.[/]")
 
         else:
             break

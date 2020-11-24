@@ -8,7 +8,7 @@ from rich.panel import Panel
 
 def create_table(cursor):
     console = rich.console.Console()
-    query = "create table if not exists notifications(NotifID int not null auto_increment, Audience varchar(5) not null, Date DATE not null, Description TEXT not null, primary key(NotifID));"
+    query = "create table if not exists notifications(GroupID INT NOT NULL, NotifID int not null auto_increment, Audience varchar(5) not null, Date DATE not null, Description TEXT not null, primary key(NotifID));"
     this_dir, this_filename = os.path.split(__file__)
     LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
     to_print = "[ERROR]: COULD NOT CREATE NOTIFICATIONS TABLE"
