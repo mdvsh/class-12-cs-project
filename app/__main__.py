@@ -11,6 +11,7 @@ from getpass import getpass
 import helpers
 from PyInquirer import prompt
 
+
 def main():
     load_dotenv(verbose=True)
     try:
@@ -113,25 +114,26 @@ def main():
                         hsh = bcrypt.hashpw(
                             password, os.getenv("BCRYPT_SALT").encode("ascii")
                         )
-                        ok, is_c = admin.teacher_create_prompt(
+                        ok, is_counselor = admin.teacher_create_prompt(
                             db, cursor, trno.upper(), hsh.decode("ascii")
                         )
                         if ok == "ok":
                             login = True
-                            if is_c == "ok":
-                                admin.counselor_dash(db, cursor, trno.upper())
-                            print("todo...")
                         else:
                             break
             elif inp == "2":
                 global admnno
                 global exists
                 while True:
-                    admnno = str(input("Enter your admission number ( {v/e/r}20000 ): "))
+                    admnno = str(
+                        input("Enter your admission number ( {v/e/r}20000 ): ")
+                    )
                     if len(admnno) == 6:
                         break
                     else:
-                        console.print(":pensive: Invalid input. [italic] Please try again:")
+                        console.print(
+                            ":pensive: Invalid input. [italic] Please try again:"
+                        )
                 console.print("🔎 Searching for existing record in the database...")
                 exists = False
                 cursor.execute(
@@ -194,7 +196,7 @@ def main():
             if is_counselor:
                 admin.counselor_dash(db, cursor, trno.upper())
             else:
-                print('todo')
+                print("todo")
     else:
         console.print("⚠️  Something went wrong... Please try again.")
     # except:

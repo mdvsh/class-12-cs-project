@@ -136,9 +136,9 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     with open(LOG_PATH, "a") as log_file:
         log_file.write(to_print + "\n")
 
-    is_c = "ok" if bool(answers["is_counselor"]) else "not-ok"
+    is_counselor = True if bool(answers["is_counselor"]) else False
 
-    return ok_admin, is_c
+    return ok_admin, is_counselor
 
 
 def counselor_dash(db, cursor, trno):

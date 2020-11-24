@@ -119,10 +119,10 @@ def get_admin_options():
                 Separator("=== College Actions ==="),
                 "Add a college to the database",
                 "Delete a college from the database",
-                Separator("=== Session/Announcement Actions"),
+                Separator("=== Session/Announcement Actions ==="),
                 "Add a session/announcement",
                 "Cancel a session/announcement",
-                Separator("=== Account Actions"),
+                Separator("=== Account Actions ==="),
                 "Quit",
             ],
         }
