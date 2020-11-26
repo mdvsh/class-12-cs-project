@@ -29,9 +29,9 @@ def create_table(cursor):
 def panel(cursor, stream, panel=True, admin=False):
     console = rich.console.Console()
     if admin:
-        query = "select date_format(Date, '%d %M %Y'), Description from notifications;"
+        query = "select DISTINCT Description, date_format(Date, '%d %M %Y') from notifications;"
     else:
-        query = "select date_format(Date, '%d %M %Y'), Description from notifications where Audience='{}';".format(
+        query = "select Description, date_format(Date, '%d %M %Y') from notifications where Audience='{}';".format(
             stream
         )
     cursor.execute(query)
@@ -49,7 +49,7 @@ def panel(cursor, stream, panel=True, admin=False):
     table.add_column("Description")
     if len(notifications) != 0:
         for notif in notifications:
-            table.add_row(f"[dim]{notif[0]}[/]", f"{notif[1]}")
+            table.add_row(f"[dim]{notif[1]}[/]", f"{notif[0]}")
     else:
         if admin:
             table.add_row(":+1:", "You have posted no notifications / sessions.")

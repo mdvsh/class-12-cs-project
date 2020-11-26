@@ -24,6 +24,13 @@ def teacher_create_table(cursor):
     with open(LOG_PATH, "a") as log_file:
         log_file.write(to_print + "\n")
 
+def check_trno(trno):
+    if len(trno) == 6:
+        if trno[0] == "T" and trno[1:6].isdigit():
+            return True
+    else:
+        return False
+    
 
 def exists(cursor, trno):
     global exists
@@ -171,7 +178,8 @@ def counselor_dash(db, cursor, trno):
     ref_panel = helpers.deadlines_panel()
     console.print(Columns([notif_panel, Panel(ttable), ref_panel]))
 
-    while True:
+    see_crud = True
+    while see_crud:
         optionAnswer = prompt(prompts.get_admin_options())
 
         if optionAnswer["option"] == "Search for a student":
@@ -606,6 +614,39 @@ def counselor_dash(db, cursor, trno):
                 console.print("[bold green]Session deleted.[/]")
             else:
                 console.print("[blue]Session not deleted.[/]")
+
+        elif optionAnswer["option"] == "Exit IntlApp Dashboard":
+            console.print("\n\n[dim]Exiting the application...[/]")
+            see_crud = False
+            break
+
+        elif optionAnswer["option"] == "Delete your IntlApp account and exit":
+            delete_confirm = prompt(
+                [
+                    {
+                        "type": "confirm",
+                        "name": "delete",
+                        "message": "Are you sure you want to delete your account? [IRREVERSIBLE]",
+                        "default": False,
+                    }
+                ]
+            )
+            if delete_confirm["delete"]:
+                cursor.execute("delete from teachers where TrNO='{}';".format(trno))
+                db.commit()
+                console.print(
+                    "\n😔 We're sorry to see you go.\n\n[italic red]Your account was deleted.[/]",
+                    justify="center",
+                )
+                see_crud = False
+                console.print("\n\n[dim]Exiting the appplication...[/]")
+            break
+
+        elif optionAnswer["option"] == "Hide this prompt":
+            console.print(":eyes: The prompt is hidden.\n")
+            show = str(input("Press enter to show it again:"))
+            if len(show) == 0:
+                see_crud = True
 
         else:
             break

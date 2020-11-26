@@ -63,13 +63,22 @@ def main():
         global inp
         while not login:
             console.print("🔐 Login as ? \n\n (1) Counselor / Teacher \n (2) Student")
-            inp = str(input("\n\nPlease enter number to login as: "))
+            inp = str(input("\n\nPlease enter number to login as (1/2): "))
             if inp == "1":
                 global trno
                 global exist
                 global is_counselor
                 console.print("Enter the [b]Admin Credentials[/b]\n")
-                trno = str(input("Enter your Staff/Teacher ID: "))
+                while True:
+                    trno = str(
+                        input("Enter your Staff/Teacher ID (eg, T20000): ")
+                    ).title()
+                    if admin.check_trno(trno):
+                        break
+                    else:
+                        console.print(
+                            ":pensive: Invalid input. [italic] Please try again."
+                        )
                 console.print("\n\n🔎 Searching for existing record in the database...")
                 is_counselor, exist = False, False
                 cursor.execute(
@@ -132,7 +141,7 @@ def main():
                         break
                     else:
                         console.print(
-                            ":pensive: Invalid input. [italic] Please try again:"
+                            ":pensive: Invalid input. [italic] Please try again."
                         )
                 console.print("🔎 Searching for existing record in the database...")
                 exists = False

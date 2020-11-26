@@ -420,7 +420,7 @@ def student_dashboard(db, cursor, admnno):
                 delete_applications(db, cursor, admnno)
                 db.commit()
                 console.print(
-                    "\n😔 We're sorry to you go.\n\n[italic red]Your account was deleted.[/]",
+                    "\n😔 We're sorry to see you go.\n\n[italic red]Your account was deleted.[/]",
                     justify="center",
                 )
                 see_crud = False

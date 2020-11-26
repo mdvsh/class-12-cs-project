@@ -123,7 +123,9 @@ def get_admin_options():
                 "Add a session/announcement",
                 "Cancel a session/announcement",
                 Separator("=== Account Actions ==="),
-                "Quit",
+                "Hide this prompt",
+                "Exit IntlApp Dashboard",
+                "Delete your IntlApp account and exit",
             ],
         }
     ]
