@@ -111,7 +111,7 @@ def get_admin_options():
         {
             "type": "list",
             "name": "option",
-            "message": "What would you like to do?",
+            "message": "What would you like to do? (Ctrl+C to force quit)",
             "choices": [
                 Separator("=== Student Actions ==="),
                 "Search for a student",
@@ -119,9 +119,9 @@ def get_admin_options():
                 Separator("=== College Actions ==="),
                 "Add a college to the database",
                 "Delete a college from the database",
-                Separator("=== Session/Announcement Actions ==="),
-                "Add a session/announcement",
-                "Cancel a session/announcement",
+                Separator("=== Session/Notification Actions ==="),
+                "Add a session/notification",
+                "Cancel a session/notification",
                 Separator("=== Account Actions ==="),
                 "Hide this prompt",
                 "Exit IntlApp Dashboard",
@@ -161,6 +161,7 @@ def get_student_options():
                 "Add a college",
                 "Remove a college",
                 Separator("=== Application Actions ==="),
+                "Request a LOR from a teacher",
                 "Change the deadline of a college",
                 "Change your application status for a college",
                 Separator("=== Account Actions ==="),
@@ -168,6 +169,25 @@ def get_student_options():
                 "Exit IntlApp Dashboard",
                 "Delete your IntlApp account and exit.",
             ],
+        }
+    ]
+    return options
+
+def get_teacher_options():
+    options = [
+        {
+            "type": "list",
+            "name": "option",
+            "message": "What would you like to do? (Ctrl+C to force quit)",
+            "choices": [
+                Separator("=== Student Actions ==="),
+                "Search for a student",
+                "Update status of a Student LOR",
+                Separator("=== Account Actions ==="),
+                "Hide this prompt",
+                "Exit IntlApp Dashboard",
+                "Delete your IntlApp account and exit",
+            ]
         }
     ]
     return options

@@ -6,7 +6,7 @@ import mysql.connector as mysql
 from rich.console import Console
 from rich.text import Text
 from pyfiglet import Figlet
-import user, admin, notifs
+import user, admin, notifs, lors
 from getpass import getpass
 import helpers
 from PyInquirer import prompt
@@ -50,7 +50,7 @@ def main():
         cursor = db.cursor(buffered=True)
         cursor.execute("use {};".format(os.getenv("DATABASE_NAME")))
         console.print(
-            "Connection [green][b]successful[/b][/green][blink]...[/blink]\n\n :gear: Initialising Tables\n\n"
+            "Connection [green][b]successful[/b][/green][blink]...[/blink]\n\n :gear: Initialising Tables\n\n[italic]Ctrl+C[/] to [red]force quit[/]\n\n"
         )
         # init and check for tables: user, counselor, teacher, sessions ...
         user.student_create_table(cursor)
@@ -58,6 +58,7 @@ def main():
         user.college_create_table(cursor)
         user.apps_create_table(cursor)
         notifs.create_table(cursor)
+        lors.create_table(cursor)
 
         login = False
         global inp
@@ -73,7 +74,7 @@ def main():
                     trno = str(
                         input("Enter your Staff/Teacher ID (eg, T20000): ")
                     ).title()
-                    if admin.check_trno(trno):
+                    if helpers.check_trno(trno):
                         break
                     else:
                         console.print(
@@ -116,7 +117,7 @@ def main():
                         exit()
                     else:
                         console.print(
-                            "🙈 [i green]We do not store your passwords.[/i green]"
+                            "🙈 [i green]We store your passwords securely.[/i green]"
                         )
                         password = getpass(prompt="Enter a new password: ")
                         password = password.encode("ascii")
@@ -180,7 +181,7 @@ def main():
                         exit()
                     else:
                         console.print(
-                            "🙈 [i green]We do not store your passwords.[/i green]"
+                            "🙈 [i green]We store your passwords securely.[/i green]"
                         )
                         password = getpass(prompt="Enter a new password: ")
                         password = password.encode("ascii")
@@ -205,7 +206,7 @@ def main():
             if is_counselor:
                 admin.counselor_dash(db, cursor, trno.upper())
             else:
-                print("todo")
+                admin.teacher_dash(db, cursor, trno.upper())
     else:
         console.print("⚠️  Something went wrong... Please try again.")
     # except:
@@ -218,8 +219,8 @@ if __name__ == "__main__":
     try:
         main()
     except:
-        # halt traceback for sometime
-        console.print_exception()
+        # # halt traceback for sometime
+        # console.print_exception()
         console.print("\n[bold red]Exiting gracefully...[/]\n")
         try:
             sys.exit(0)

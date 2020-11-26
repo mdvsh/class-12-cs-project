@@ -2,6 +2,7 @@ from rich.table import Table
 from rich.panel import Panel
 import os, rich
 import mysql.connector as mysql
+import re
 
 
 def check_table_exists(table_name):
@@ -47,3 +48,24 @@ def get_single_record(cursor, cname, tname, conditional_cname, conditional_cvalu
     )
     output = cursor.fetchone()
     return output[0]
+
+def check_trno(trno):
+    if len(trno) == 6:
+        if trno[0] == "T" and trno[1:6].isdigit():
+            return True
+    else:
+        return False
+
+def check_admnno(admnno):
+    admnno = admnno.upper()
+    if re.match("^[REV][0-9][0-9][0-9][0-9][0-9]$", admnno):
+        return True
+    else:
+        return False
+
+def check_clsec(clsec):
+    clsec = clsec.upper()
+    if re.match("^1[12][A-Z]$", clsec):
+        return True
+    else:
+        return False

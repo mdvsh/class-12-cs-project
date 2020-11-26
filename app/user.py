@@ -325,7 +325,7 @@ def student_dashboard(db, cursor, admnno):
                     [
                         {
                             "type": "confirm",
-                            "message": "Continue adding another college to remove from watchlist?",
+                            "message": "Continue removing colleges from watchlist?",
                             "name": "more",
                             "default": True,
                         }
@@ -334,6 +334,68 @@ def student_dashboard(db, cursor, admnno):
                 add_rlist = more_college["more"]
             for cid in cid_list:
                 delete_application(db, cursor, admnno, cid)
+            display_student_tables(db, cursor, admnno)
+
+        elif crud_ops["opr"] == "Request a LOR from a teacher":
+
+            request_subject_ans = prompt(
+                [
+                    {
+                        "type": "list",
+                        "name": "subj",
+                        "message": "What subject does the teacher teach?",
+                        "choices": [
+                            "Accountancy",
+                            "Biology",
+                            "Biotechnology",
+                            "BusinessStudies",
+                            "Chemistry",
+                            "ComputerScience",
+                            "Economics",
+                            "English",
+                            "FineArts",
+                            "Geography",
+                            "Hindi",
+                            "Mathematics",
+                            "PerformingArts",
+                            "PE",
+                            "Physics",
+                            "Political Science",
+                            "Sanskrit",
+                            "French",
+                            "German",
+                        ],
+                    }
+                ]
+            )
+            subject = request_subject_ans["subj"]
+            global add_lorlist
+            add_lorlist, trno_list = True, []
+            while add_lorlist:
+                remove_college_ans = prompt(
+                    [
+                        {
+                            "type": "input",
+                            "name": "cid",
+                            "message": "Enter CollegeID of college to remove from watchlist",
+                        }
+                    ]
+                )
+                trno_list.append(int(remove_college_ans["cid"]))
+                more_lor = prompt(
+                    [
+                        {
+                            "type": "confirm",
+                            "message": "Continue removing colleges from watchlist?",
+                            "name": "more",
+                            "default": True,
+                        }
+                    ]
+                )
+                add_lorlist = more_lor["more"]
+            # change func name
+            for trno in trno_list:
+                add_lor(db, cursor, admnno, trno)
             display_student_tables(db, cursor, admnno)
 
         elif crud_ops["opr"] == "Change the deadline of a college":

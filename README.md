@@ -1,9 +1,14 @@
 # class-12-cs-project
 
-International student dashboard RDBMS something idk
+## IntlApp CLI
+A command-line interface for schools to manage the records of students applying abroad
 
-create database `db` first in mysql, enter database creds as specified in `app/.sample.env`, rename it to `.env`
-run the following commands
+### Prerequisites
+Mysql should be installed
+
+### Setup
+create database `db` first in mysql, enter database credentials as specified in `app/.sample.env`, rename it to `.env`
+run the following commands in the command prompt/terminal
 
 ```console
 $ python setup.py build
