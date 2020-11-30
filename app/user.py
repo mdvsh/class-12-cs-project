@@ -225,7 +225,7 @@ def display_student_tables(db, cursor, admnno):
         )
     )
     watchlist = cursor.fetchall()
-    trno = helpers.get_single_record(cursor, "TrNO", "lors", "AdmnNO", admnno)
+
     cursor.execute(f"SELECT teachers.TrNO, teachers.Name, teachers.Subject, lors.Submitted FROM teachers JOIN lors ON teachers.TrNO = lors.TrNO WHERE lors.AdmnNO = '{admnno}'")
     outputs = cursor.fetchall()
 
@@ -267,8 +267,7 @@ def display_student_tables(db, cursor, admnno):
     table_four.add_column("TeacherID")
     table_four.add_column("Teacher Name", width=18)
     table_four.add_column("Subject", justify="center")
-    table_four.add_column("Submitted", justify="center")
-    print(outputs)
+    table_four.add_column("Submitted?", justify="center")
     for b in outputs:
         table_four.add_row(
             f"[bold]{b[0]}[/]",
@@ -279,7 +278,7 @@ def display_student_tables(db, cursor, admnno):
     console.print("\n\n[bold]Your Student Dashboard[/]\n", justify="center")
     ref_panel = helpers.deadlines_panel()
     notif_panel = notifs.panel(cursor, output[3])
-    console.print(Columns([Panel(table), Panel(table_four), Panel(table_two)]))
+    console.print(Columns([Panel(table), Panel(table_four), Panel(table_two)]), justify="center")
     console.print(Columns([notif_panel, Panel(table_three), ref_panel]), justify="center")
 
 

@@ -1,6 +1,6 @@
 # user.py: user logging, creation, edits, delete
 
-import os, rich
+import os, rich, re
 from PyInquirer import prompt, Separator
 import mysql.connector as mysql
 import prompts, notifs, helpers
@@ -68,7 +68,7 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     trno = trno.upper()
     console = rich.console.Console()
     table = rich.table.Table(
-        show_header=True, header_style="bold magenta", show_footer=False
+        show_header=True, header_style="bold orange", show_footer=False
     )
     console.print("🆕 [bold green] New Teacher Registration Form [/bold green]\n")
     questions = prompts.get_admin_questions()
@@ -163,7 +163,7 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
 def counselor_dash(db, cursor, trno):
     console = rich.console.Console()
     ttable = rich.table.Table(
-        show_header=True, show_footer=False, header_style="bold magenta"
+        show_header=True, show_footer=False, header_style="bold blue"
     )
     ttable.box = rich.box.SIMPLE_HEAD
     cursor.execute("SELECT COUNT(*) FROM students")
@@ -239,7 +239,7 @@ def counselor_dash(db, cursor, trno):
                     console.print("[red]No students found.[/]")
                     continue
                 table = rich.table.Table(
-                    show_header=True, header_style="bold magenta", show_footer=False
+                    show_header=True, header_style="bold green", show_footer=False
                 )
                 table.add_column("Admn. No")
                 table.add_column("Student Name", width=20)
@@ -284,7 +284,7 @@ def counselor_dash(db, cursor, trno):
                     continue
 
                 table = rich.table.Table(
-                    show_header=True, header_style="bold magenta", show_footer=False
+                    show_header=True, header_style="bold yellow", show_footer=False
                 )
                 table.add_column("Admn. No")
                 table.add_column("Student Name", width=20)
@@ -353,7 +353,7 @@ def counselor_dash(db, cursor, trno):
                     )
 
                 console.print(table, justify="center")
-        elif optionAnswer["option"] == "Update status of a student":
+        elif optionAnswer["option"] == "Update status of a student (documents)":
             
             while True:
                 change_status_admnno = prompt(
@@ -361,21 +361,25 @@ def counselor_dash(db, cursor, trno):
                         {
                             "type": "input",
                             "name": "admnno",
-                            "message": "Enter the Admn. No. of the student you want to change the status of",
+                            "message": "Enter the Admn. No. of the student you want to change the status of \n  If the Admn. No. is not known, search for the student first \n  (Press Enter to go back)",
                         }
                     ]
                 )
+                if len(change_status_admnno["admnno"]) == 0:
+                    break
+
                 sadmnno = change_status_admnno["admnno"].title()
                 if helpers.check_admnno(sadmnno):
                     break
                 else:
                     console.print("Invalid admission number. [italic]Please try again.[/]")
             
-            
+            if len(change_status_admnno["admnno"]) == 0:
+                continue
 
 
             cursor.execute(
-                f"SELECT applications.AdmnNO, students.Name, applications.CollegeID, colleges.CollegeName, applications.Submitted FROM students JOIN applications ON students.AdmnNO = applications.AdmnNO JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{sadmnno}'"
+                f"SELECT * from students WHERE admnno = '{sadmnno}'"
             )
             records = cursor.fetchall()
 
@@ -383,86 +387,98 @@ def counselor_dash(db, cursor, trno):
                 console.print("[red]Student not found.[/]")
                 continue
 
-            table = rich.table.Table(
-                show_header=True, header_style="bold magenta", show_footer=False
-            )
-            table.add_column("Admn. No")
-            table.add_column("Student Name", width=20)
-            table.add_column("College ID", justify="left")
-            table.add_column("College Name")
-            table.add_column("Submitted")
-
-            for record in records:
-                table.add_row(
-                    f"{record[0]}",
-                    f"{record[1]}",
-                    f"{record[2]}",
-                    f"{record[3]}",
-                    "❌" if record[4] == 0 else "✅",
-                )
-            console.print(table, justify="center")
-            
-            while True:
-                change_status_college = prompt(
-                    [
-                        {"type": "input", "name": "cid", "message": "Select the CollegeID"},
-                        {
-                            "type": "confirm",
-                            "name": "status",
-                            "message": "Has the application been submitted?",
-                            "default": True,
-                        },
-                    ]
-                )
-                try:
-                    cID = int(change_status_college["cid"])
-                    for record in records:
-                        if record[2] == cID:
-                            break
-                    else:
-                        console.print("[bold red]College ID not found.[/]")
-                        continue
-                    break
-                except ValueError:
-                    console.print("[red]Invalid College ID.[/]")
-                
-                sstatus = int(change_status_college["status"])
-
             cursor.execute(
-                f"UPDATE applications SET Submitted = {sstatus} WHERE AdmnNO = '{sadmnno}' AND CollegeID = {cID}"
+                f"SELECT AdmnNO, Name, FinalTranscript, CounselorLOR, MidYearReport, PredictedMarks FROM students WHERE AdmnNO = '{sadmnno}'"
+            )
+            record = cursor.fetchone()
+
+            table2 = rich.table.Table(
+                show_header=True, header_style="bold blue", show_footer=False
+            )
+            table2.add_column("Admn. No")
+            table2.add_column("Student Name", width=20)
+            table2.add_column("Final Transcript", justify="center")
+            table2.add_column("Counselor LOR", justify="center")
+            table2.add_column("Mid-Year Report", justify="center")
+            table2.add_column("Predicted Marks", justify="center")
+
+            table2.add_row(
+                f"{record[0]}",
+                f"{record[1]}",
+                "❌" if record[2] == 0 else "✅",
+                "❌" if record[3] == 0 else "✅",
+                "❌" if record[4] == 0 else "✅",
+                "❌" if record[5] == 0 else "✅",
+            )
+            console.print(table2, justify="center")
+            
+            change_status_college = prompt(
+                [
+                    {
+                        "type": "confirm",
+                        "name": "FT_status",
+                        "message": "Has the Final Transcript been submitted?",
+                        "default": True,
+                    },
+                    {
+                        "type": "confirm",
+                        "name": "CL_status",
+                        "message": "Has the Counselor LOR been submitted?",
+                        "default": True,
+                    },
+                    {
+                        "type": "confirm",
+                        "name": "MYR_status",
+                        "message": "Has the Mid-Year report been submitted?",
+                        "default": True,
+                    },
+                    {
+                        "type": "confirm",
+                        "name": "PM_status",
+                        "message": "Have the Predicted Marks been submitted?",
+                        "default": True,
+                    },
+                ]
+            )
+            
+            FT_status = int(change_status_college["FT_status"])
+            CL_status = int(change_status_college["CL_status"])
+            MYR_status = int(change_status_college["MYR_status"])
+            PM_status = int(change_status_college["PM_status"])
+            cursor.execute(
+                f"UPDATE students SET FinalTranscript = {FT_status}, CounselorLOR = {CL_status}, MidYearReport = {MYR_status}, PredictedMarks = {PM_status} WHERE AdmnNO = '{sadmnno}'"
             )
             db.commit()
 
             cursor.execute(
-                f"SELECT applications.AdmnNO, students.Name, applications.CollegeID, colleges.CollegeName, applications.Submitted FROM students JOIN applications ON students.AdmnNO = applications.AdmnNO JOIN colleges ON colleges.CollegeID = applications.CollegeID WHERE applications.AdmnNO = '{sadmnno}'"
+                f"SELECT AdmnNO, Name, FinalTranscript, CounselorLOR, MidYearReport, PredictedMarks FROM students WHERE AdmnNO = '{sadmnno}'"
             )
-            records = cursor.fetchall()
+            record = cursor.fetchone()
 
             table = rich.table.Table(
-                show_header=True, header_style="bold magenta", show_footer=False
+                show_header=True, header_style="bold blue", show_footer=False
             )
             table.add_column("Admn. No")
             table.add_column("Student Name", width=20)
-            table.add_column("College ID", justify="left")
-            table.add_column("College Name")
-            table.add_column("Submitted")
+            table.add_column("Final Transcript", justify="center")
+            table.add_column("Counselor LOR", justify="center")
+            table.add_column("Mid-Year Report", justify="center")
+            table.add_column("Predicted Marks", justify="center")
 
-            for record in records:
-                table.add_row(
-                    f"{record[0]}",
-                    f"{record[1]}",
-                    f"{record[2]}",
-                    f"{record[3]}",
-                    "❌" if record[4] == 0 else "✅",
-                )
+            table.add_row(
+                f"{record[0]}",
+                f"{record[1]}",
+                "❌" if record[2] == 0 else "✅",
+                "❌" if record[3] == 0 else "✅",
+                "❌" if record[4] == 0 else "✅",
+                "❌" if record[5] == 0 else "✅",
+            )
             console.print(table, justify="center")
-            print()
-            console.print("[bold green]Status updated.[/]")
             print()
 
         elif optionAnswer["option"] == "Add a college to the database":
             col_table = rich.table.Table(
-                show_header=True, header_style="bold magenta", show_footer=False
+                show_header=True, header_style="bold orange", show_footer=False
             )
             col_table.box = rich.box.SIMPLE_HEAD
             col_table.title = "[not italic]:school:[/] Colleges"
@@ -507,7 +523,7 @@ def counselor_dash(db, cursor, trno):
 
         elif optionAnswer["option"] == "Delete a college from the database":
             col_table = rich.table.Table(
-                show_header=True, header_style="bold magenta", show_footer=False
+                show_header=True, header_style="bold blue", show_footer=False
             )
             col_table.box = rich.box.SIMPLE_HEAD
             col_table.title = "[not italic]:school:[/] Colleges"
@@ -646,7 +662,7 @@ def counselor_dash(db, cursor, trno):
                 console.print("[bold green]Session added.[/]")
 
                 stable = rich.table.Table(
-                show_header=True, header_style="bold magenta", show_footer=False
+                show_header=True, header_style="bold green", show_footer=False
                 )
                 stable.box = rich.box.MINIMAL
                 stable.title = "[not italic]🔔[/] Notifications"
@@ -669,7 +685,7 @@ def counselor_dash(db, cursor, trno):
 
         elif optionAnswer["option"] == "Cancel a session/notification":
             stable = rich.table.Table(
-                show_header=True, header_style="bold magenta", show_footer=False
+                show_header=True, header_style="bold yellow", show_footer=False
             )
             stable.box = rich.box.MINIMAL
             stable.title = "[not italic]🔔[/] Notifications"
@@ -765,7 +781,7 @@ def counselor_dash(db, cursor, trno):
 def teacher_dash(db, cursor, trno):
     console = rich.console.Console()
     ltable =  rich.table.Table(
-        show_header=True, show_footer=False, header_style="bold magenta"
+        show_header=True, show_footer=False, header_style="bold blue"
     )
     ttable = rich.table.Table(
         show_header=True, show_footer=False, header_style="bold magenta"
@@ -799,17 +815,15 @@ def teacher_dash(db, cursor, trno):
     ltable.add_column("Admn. No.")
     ltable.add_column("Student Name", width=18)
     ltable.add_column("Class", justify="center")
-    ltable.add_column("Submitted", justify="center")
+    ltable.add_column("Submitted?", justify="center")
     for output in outputs:
         ltable.add_row(
             f"[bold]{output[0]}[/]",
             f"{output[1].title()}",
-            f"{output[2]}" if output[2] != None else "[italic]--NA--[/]",
+            f"{output[2]}",
             "✅" if bool(output[3]) else "❌",
         )
-    notif_panel = notifs.panel(cursor, "bruh", admin=True)
-    ref_panel = helpers.deadlines_panel()
-    console.print(Columns([notif_panel, Panel(ttable), ref_panel, Panel(ltable)]))
+    console.print(Columns([Panel(ttable), Panel(ltable)]), justify="center")
 
     see_crud = True
     while see_crud:
@@ -832,7 +846,7 @@ def teacher_dash(db, cursor, trno):
                     console.print("[red]No students found.[/]")
                     continue
                 table = rich.table.Table(
-                    show_header=True, header_style="bold magenta", show_footer=False
+                    show_header=True, header_style="bold orange", show_footer=False
                 )
                 table.add_column("Admn. No")
                 table.add_column("Student Name", width=18)
@@ -860,7 +874,7 @@ def teacher_dash(db, cursor, trno):
                     console.print("[red]No students found.[/]")
                     continue
                 table = rich.table.Table(
-                    show_header=True, header_style="bold magenta", show_footer=False
+                    show_header=True, header_style="bold cyan", show_footer=False
                 )
                 table.add_column("Admn. No")
                 table.add_column("Student Name", width=20)
@@ -905,7 +919,7 @@ def teacher_dash(db, cursor, trno):
                     continue
 
                 table = rich.table.Table(
-                    show_header=True, header_style="bold magenta", show_footer=False
+                    show_header=True, header_style="bold ", show_footer=False
                 )
                 table.add_column("Admn. No")
                 table.add_column("Student Name", width=20)
@@ -977,7 +991,62 @@ def teacher_dash(db, cursor, trno):
         
         # Add this option in a later commit
         elif optionAnswer["option"] == "Update status of a Student LOR":
-            break
+            
+            change_lor_status = prompt(
+                [
+                    {
+                        "type": "list",
+                        "name": "sname",
+                        "message": "Select the student whose LOR status you'd like to change: ",
+                        "choices": [
+                            f"{record[1]} ({record[0]})" for  record in outputs
+                        ]
+                    },
+                    {
+                        "type": "confirm",
+                        "name": "isSubmitted",
+                        "message": "Has the LOR been submitted?",
+                        "default": True
+                    },
+                    {
+                        "type": "confirm",
+                        "name": "confirmed",
+                        "message": "Confirm?",
+                        "default": True
+                    }
+                ]
+            )
+            if change_lor_status["confirmed"]:
+                if change_lor_status["isSubmitted"]:
+                    admnno = re.findall('[R|E|V][0-9][0-9][0-9][0-9][0-9]', change_lor_status['sname'])[0]
+                    cursor.execute(f"UPDATE lors SET submitted = 1 where admnno = '{admnno}' AND TrNO = '{trno}'")
+                    db.commit()
+                else:
+                    admnno = re.findall('[R|E|V][0-9][0-9][0-9][0-9][0-9]', change_lor_status['sname'])[0]
+                    cursor.execute(f"UPDATE lors SET submitted = 0 where admnno = '{admnno}' AND TrNO = '{trno}'")
+                    db.commit()
+                console.print("[green]Status updated.[/]")
+            else:
+                console.print("[blue]Status not updated.[/]")
+
+            cursor.execute(f"SELECT students.AdmnNO, students.Name, students.Class, lors.Submitted FROM students JOIN lors ON students.AdmnNO = lors.AdmnNO WHERE lors.TrNO = '{trno}'")
+            outputs2 = cursor.fetchall()
+            
+            lortable = rich.table.Table(show_header=True, show_footer=False, header_style="bold blue")
+            lortable.box = rich.box.SIMPLE_HEAD
+            lortable.title = "[not italic]📋[/] Status of LORs"
+            lortable.add_column("Admn. No.")
+            lortable.add_column("Student Name", width=18)
+            lortable.add_column("Class", justify="center")
+            lortable.add_column("Submitted?", justify="center")
+            for output in outputs2:
+                lortable.add_row(
+                    f"[bold]{output[0]}[/]",
+                    f"{output[1].title()}",
+                    f"{output[2]}",
+                    "✅" if bool(output[3]) else "❌",
+                )
+            console.print(Columns([lortable,]), justify="center")
 
         
         elif optionAnswer["option"] == "Exit IntlApp Dashboard":

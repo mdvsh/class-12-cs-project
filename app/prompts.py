@@ -115,7 +115,7 @@ def get_admin_options():
             "choices": [
                 Separator("=== Student Actions ==="),
                 "Search for a student",
-                "Update status of a student",
+                "Update status of a student (documents)",
                 Separator("=== College Actions ==="),
                 "Add a college to the database",
                 "Delete a college from the database",
