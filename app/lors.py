@@ -17,3 +17,25 @@ def create_table(cursor):
 
     with open(LOG_PATH, "a") as log_file:
         log_file.write(to_print + "\n")
+
+def add_lor(db, cursor, tid, sid):
+    console = rich.console.Console()
+    query = "insert into lors(AdmnNO, TrNO) values('{}', '{}');".format(sid, tid)
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = "[ERROR]: COULD NOT ADD TO LOR TABLE"
+    try:
+        cursor.execute(query)
+        to_print = "[INSERT] NEW ROW LOR"
+        db.commit()
+    except mysql.Error as e:
+        if e.errno == 1062:
+            console.print(
+                "⚡ [italic]LOR already exists in database.[/] [magenta]Linking to your application[/]..."
+            )
+        else:
+            console.print("⚠️ Something Went Wrong :-(")
+        to_print = f"[DB ERROR]: INSERTING\nMessage: {e}"
+
+    with open(LOG_PATH, "a") as log_file:
+        log_file.write(to_print + "\n")

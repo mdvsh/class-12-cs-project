@@ -220,7 +220,7 @@ if __name__ == "__main__":
         main()
     except:
         # # halt traceback for sometime
-        # console.print_exception()
+        console.print_exception()
         console.print("\n[bold red]Exiting gracefully...[/]\n")
         try:
             sys.exit(0)

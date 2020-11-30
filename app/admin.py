@@ -57,11 +57,14 @@ def get_existing_teachers(cursor, subject):
     ]
     cursor.execute("select TrNO, Name from teachers where Subject='{}';".format(subject))
     output = cursor.fetchall()
-    for teacher in output:
-        existing_choices.append({"name": f"{teacher[1]} (ID: {teacher[0]}"})
+    if len(output) != 0:
+        for teacher in output:
+            existing_choices.append({"name": f"{teacher[1]} (ID: {teacher[0]})"})
+    else:
+        existing_choices.append({"name": f"No {subject} teacher found in Teacher DB"})
     return existing_choices
 
-def teacher_create_prompt(db, cursor, trno, pswd_hash):
+def teacher_create_prompt(db, cursor, trno, pswd_hash): 
     trno = trno.upper()
     console = rich.console.Console()
     table = rich.table.Table(

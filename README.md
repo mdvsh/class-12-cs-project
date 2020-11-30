@@ -1,12 +1,19 @@
-# class-12-cs-project
+# IntlApp Dashboard CLI
 
-## IntlApp CLI
-A command-line interface for schools to manage the records of students applying abroad
+## Final Project: Class 12 Computer Science
+
+An interactive Terminal User Interface wrapped around an International Admissions Dashboard for Counselor, Teachers, and Students.
+
+### Demo
+
+*coming soon*
 
 ### Prerequisites
-Mysql should be installed
+
+- MySQL
 
 ### Setup
+
 create database `db` first in mysql, enter database credentials as specified in `app/.sample.env`, rename it to `.env`
 run the following commands in the command prompt/terminal
 

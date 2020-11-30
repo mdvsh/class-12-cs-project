@@ -5,9 +5,9 @@ with open("README.md", "r") as fh:
 
 setup(
     name="app",
-    version="0.0.0",
+    version="0.1.1",
     author="Madhav and Mehar",
     description="A Terminal User Interface wrapped around an International Admissions Dashboard for Counselor/Teachers/Students",
-    long_description="finna speedrun",
+    long_description="kardia bhai speedrun",
     entry_points={"console_scripts": ["app = app.__main__:main"]},
 )

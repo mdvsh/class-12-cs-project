@@ -1,12 +1,12 @@
 # user.py: user logging, creation, edits, delete
 
-import os
+import os, re
 import rich
 from PyInquirer import prompt, Separator
 import mysql.connector as mysql
 from rich.columns import Columns
 from rich.panel import Panel
-import prompts, notifs
+import prompts, notifs, admin, lors
 import helpers
 
 
@@ -210,9 +210,13 @@ def display_student_tables(db, cursor, admnno):
     table_three = rich.table.Table(
         show_header=True, header_style="bold blue", show_footer=False
     )
+    table_four = rich.table.Table(
+        show_header=True, header_style="bold red", show_footer=False
+    )
     table.box = rich.box.MINIMAL
     table_two.box = rich.box.MINIMAL
     table_three.box = rich.box.MINIMAL
+    table_four.box = rich.box.MINIMAL
     cursor.execute("select * from students where AdmnNO='{}';".format(admnno))
     output = cursor.fetchone()
     cursor.execute(
@@ -221,6 +225,10 @@ def display_student_tables(db, cursor, admnno):
         )
     )
     watchlist = cursor.fetchall()
+    trno = helpers.get_single_record(cursor, "TrNO", "lors", "AdmnNO", admnno)
+    cursor.execute(f"SELECT teachers.TrNO, teachers.Name, teachers.Subject, lors.Submitted FROM teachers JOIN lors ON teachers.TrNO = lors.TrNO WHERE lors.AdmnNO = '{admnno}'")
+    outputs = cursor.fetchall()
+
 
     table.title = "[not italic]👤[/] Your Info"
     table.add_column("Admn. No.")
@@ -255,11 +263,24 @@ def display_student_tables(db, cursor, admnno):
             "✅" if college[3] == 1 else "❌",
         )
 
+    table_four.title = "[not italic]📋[/] Status of LORs"
+    table_four.add_column("TeacherID")
+    table_four.add_column("Teacher Name", width=18)
+    table_four.add_column("Subject", justify="center")
+    table_four.add_column("Submitted", justify="center")
+    print(outputs)
+    for b in outputs:
+        table_four.add_row(
+            f"[bold]{b[0]}[/]",
+            f"{b[1].title()}",
+            f"{b[2]}" if b[2] != None else "[italic]--NA--[/]",
+            "✅" if bool(b[3]) else "❌",
+        )
     console.print("\n\n[bold]Your Student Dashboard[/]\n", justify="center")
     ref_panel = helpers.deadlines_panel()
     notif_panel = notifs.panel(cursor, output[3])
-    console.print(Columns([Panel(table_two), ref_panel, notif_panel], expand=True))
-    console.print(Columns([Panel(table), Panel(table_three)]), justify="center")
+    console.print(Columns([Panel(table), Panel(table_four), Panel(table_two)]))
+    console.print(Columns([notif_panel, Panel(table_three), ref_panel]), justify="center")
 
 
 def student_dashboard(db, cursor, admnno):
@@ -337,65 +358,67 @@ def student_dashboard(db, cursor, admnno):
             display_student_tables(db, cursor, admnno)
 
         elif crud_ops["opr"] == "Request a LOR from a teacher":
-
-            request_subject_ans = prompt(
-                [
-                    {
-                        "type": "list",
-                        "name": "subj",
-                        "message": "What subject does the teacher teach?",
-                        "choices": [
-                            "Accountancy",
-                            "Biology",
-                            "Biotechnology",
-                            "BusinessStudies",
-                            "Chemistry",
-                            "ComputerScience",
-                            "Economics",
-                            "English",
-                            "FineArts",
-                            "Geography",
-                            "Hindi",
-                            "Mathematics",
-                            "PerformingArts",
-                            "PE",
-                            "Physics",
-                            "Political Science",
-                            "Sanskrit",
-                            "French",
-                            "German",
-                        ],
-                    }
-                ]
-            )
-            subject = request_subject_ans["subj"]
             global add_lorlist
             add_lorlist, trno_list = True, []
             while add_lorlist:
-                remove_college_ans = prompt(
+                request_subject_ans = prompt(
                     [
                         {
-                            "type": "input",
-                            "name": "cid",
-                            "message": "Enter CollegeID of college to remove from watchlist",
+                            "type": "list",
+                            "name": "subj",
+                            "message": "What subject does the teacher teach?",
+                            "choices": [
+                                "Accountancy",
+                                "Biology",
+                                "Biotechnology",
+                                "BusinessStudies",
+                                "Chemistry",
+                                "ComputerScience",
+                                "Economics",
+                                "English",
+                                "FineArts",
+                                "Geography",
+                                "Hindi",
+                                "Mathematics",
+                                "PerformingArts",
+                                "PE",
+                                "Physics",
+                                "Political Science",
+                                "Sanskrit",
+                                "French",
+                                "German",
+                            ],
                         }
                     ]
                 )
-                trno_list.append(int(remove_college_ans["cid"]))
+                subject = request_subject_ans["subj"]
+                remove_college_ans = prompt(
+                    [
+                        {
+                            "type": "list",
+                            "name": "tname",
+                            "message": "Choose your subject teacher.",
+                            "choices": admin.get_existing_teachers(cursor, subject)
+                        }
+                    ]
+                )
+                try:
+                    trno_list.append(re.findall("[T][0-9][0-9][0-9][0-9][0-9]", remove_college_ans["tname"])[0])
+                except:
+                    pass
                 more_lor = prompt(
                     [
                         {
                             "type": "confirm",
-                            "message": "Continue removing colleges from watchlist?",
+                            "message": "Request another LOR from a teacher?",
                             "name": "more",
                             "default": True,
                         }
                     ]
                 )
                 add_lorlist = more_lor["more"]
-            # change func name
             for trno in trno_list:
-                add_lor(db, cursor, admnno, trno)
+                lors.add_lor(db, cursor, trno, admnno)
             display_student_tables(db, cursor, admnno)
 
         elif crud_ops["opr"] == "Change the deadline of a college":
