@@ -68,7 +68,7 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     trno = trno.upper()
     console = rich.console.Console()
     table = rich.table.Table(
-        show_header=True, header_style="bold orange", show_footer=False
+        show_header=True, header_style="bold yellow", show_footer=False
     )
     console.print("🆕 [bold green] New Teacher Registration Form [/bold green]\n")
     questions = prompts.get_admin_questions()
@@ -483,7 +483,7 @@ def counselor_dash(db, cursor, trno):
 
         elif optionAnswer["option"] == "Add a college to the database":
             col_table = rich.table.Table(
-                show_header=True, header_style="bold orange", show_footer=False
+                show_header=True, header_style="bold yellow", show_footer=False
             )
             col_table.box = rich.box.SIMPLE_HEAD
             col_table.title = "[not italic]:school:[/] Colleges"
@@ -773,7 +773,7 @@ def counselor_dash(db, cursor, trno):
                 console.print("\n\n[dim]Exiting the appplication...[/]")
             break
 
-        elif optionAnswer["option"] == "Hide this prompt":
+        elif optionAnswer["option"] == "Hide this prompt (to scroll up)":
             console.print(":eyes: The prompt is hidden.\n")
             show = str(input("Press enter to show it again:"))
             if len(show) == 0:
@@ -782,8 +782,7 @@ def counselor_dash(db, cursor, trno):
         else:
             break
 
-
-def teacher_dash(db, cursor, trno):
+def display_teacher_tables(cursor, trno):
     console = rich.console.Console()
     ltable =  rich.table.Table(
         show_header=True, show_footer=False, header_style="bold blue"
@@ -830,7 +829,11 @@ def teacher_dash(db, cursor, trno):
         )
     console.print(Columns([Panel(ttable), Panel(ltable)]), justify="center")
 
+
+def teacher_dash(db, cursor, trno):
+    console = rich.console.Console()
     see_crud = True
+    display_teacher_tables(cursor, trno)
     while see_crud:
         optionAnswer = prompt(prompts.get_teacher_options())
 
@@ -851,7 +854,7 @@ def teacher_dash(db, cursor, trno):
                     console.print("[red]No students found.[/]")
                     continue
                 table = rich.table.Table(
-                    show_header=True, header_style="bold orange", show_footer=False
+                    show_header=True, header_style="bold yellow", show_footer=False
                 )
                 table.add_column("Admn. No")
                 table.add_column("Student Name", width=18)
@@ -863,6 +866,7 @@ def teacher_dash(db, cursor, trno):
                 )
 
                 console.print(table, justify="center")
+                display_teacher_tables(cursor, trno)
 
             elif searchMethodAnswer["method"] == "Search by Class-Section":
                 while True:
@@ -892,6 +896,7 @@ def teacher_dash(db, cursor, trno):
                     )
 
                 console.print(table, justify="center")
+                display_teacher_tables(cursor, trno)
 
             elif searchMethodAnswer["method"] == "Search by Stream":
                 s_stream_prompt = [
@@ -937,6 +942,7 @@ def teacher_dash(db, cursor, trno):
                     )
 
                 console.print(table, justify="center")
+                display_teacher_tables(cursor, trno)
 
             elif searchMethodAnswer["method"] == "Search by Deadline":
                 s_deadline_prompt = [
@@ -993,10 +999,12 @@ def teacher_dash(db, cursor, trno):
                     )
 
                 console.print(table, justify="center")
+                display_teacher_tables(cursor, trno)
         
         # Add this option in a later commit
         elif optionAnswer["option"] == "Update status of a Student LOR":
-            
+            cursor.execute(f"SELECT students.AdmnNO, students.Name, students.Class, lors.Submitted FROM students JOIN lors ON students.AdmnNO = lors.AdmnNO WHERE lors.TrNO = '{trno}'")
+            outputs = cursor.fetchall()
             change_lor_status = prompt(
                 [
                     {
@@ -1004,7 +1012,7 @@ def teacher_dash(db, cursor, trno):
                         "name": "sname",
                         "message": "Select the student whose LOR status you'd like to change: ",
                         "choices": [
-                            f"{record[1]} ({record[0]})" for  record in outputs
+                            f"{record[1]} ({record[0]})" for record in outputs
                         ]
                     },
                     {
@@ -1052,6 +1060,7 @@ def teacher_dash(db, cursor, trno):
                     "✅" if bool(output[3]) else "❌",
                 )
             console.print(Columns([lortable,]), justify="center")
+            display_teacher_tables(cursor, trno)
 
         
         elif optionAnswer["option"] == "Exit IntlApp Dashboard":
@@ -1081,7 +1090,7 @@ def teacher_dash(db, cursor, trno):
                 console.print("\n\n[dim]Exiting the appplication...[/]")
             break
 
-        elif optionAnswer["option"] == "Hide this prompt":
+        elif optionAnswer["option"] == "Hide this prompt (to scroll up)":
             console.print(":eyes: The prompt is hidden.\n")
             show = str(input("Press enter to show it again:"))
             if len(show) == 0:
@@ -1089,3 +1098,4 @@ def teacher_dash(db, cursor, trno):
 
         else:
             break
+            

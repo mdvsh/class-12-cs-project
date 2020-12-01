@@ -288,7 +288,7 @@ def display_student_tables(db, cursor, admnno):
     ref_panel = helpers.deadlines_panel()
     notif_panel = notifs.panel(cursor, output[3])
     console.print(Columns([Panel(table), Panel(table_four), Panel(table_two)]), justify="center")
-    console.print(Columns([notif_panel, Panel(table_three), ref_panel]), justify="center")
+    console.print(Columns([notif_panel, Panel(table_three), ref_panel], equal=False, expand=False))
 
 
 def student_dashboard(db, cursor, admnno):
@@ -582,7 +582,7 @@ def student_dashboard(db, cursor, admnno):
             see_crud = False
             console.print("\n\n[dim]Exiting the appplication...[/]")
 
-        elif crud_ops['opr'] == 'Hide this prompt':
+        elif crud_ops['opr'] == 'Hide this prompt (to scroll up)':
             console.print(':eyes: The prompt is hidden.\n')
             show = str(input("Press enter to show it again:"))
             if len(show) == 0:
