@@ -72,7 +72,12 @@ def teacher_create_prompt(db, cursor, trno, pswd_hash):
     )
     console.print("🆕 [bold green] New Teacher Registration Form [/bold green]\n")
     questions = prompts.get_admin_questions()
-    answers = prompt(questions)
+    while True:
+        answers = prompt(questions)
+        if len(answers["full_name"]) > 255:
+            console.print("[bold red]Name too long.[/]")
+            continue
+        break
 
     if not answers["is_counselor"]:
         # print(trno, pswd_hash, answers)

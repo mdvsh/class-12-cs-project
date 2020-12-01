@@ -261,7 +261,7 @@ def display_student_tables(db, cursor, admnno):
 
     table_three.title = "[not italic]👀[/] Your Watchlist"
     table_three.add_column("CollegeID", justify="left")
-    table_three.add_column("College Name")
+    table_three.add_column("College Name", width=30)
     table_three.add_column("Deadline")
     table_three.add_column("Submitted?", justify="center")
     for college in watchlist:
@@ -314,7 +314,15 @@ def student_dashboard(db, cursor, admnno):
                 }
                 p = prompts.get_college_questions()
                 p.insert(0, college_prompt)
-                add_college_ans = prompt(p)
+                while True:
+                    add_college_ans = prompt(p)
+                    try:
+                        if len(add_college_ans["new_college"]) > 255:
+                            console.print("[bold red]College Name too long.[/]")
+                            continue
+                    except KeyError:
+                        pass
+                    break
                 for c in add_college_ans["colleges"]:
                     if c != "Add it below!":
                         cd = {}
@@ -355,16 +363,28 @@ def student_dashboard(db, cursor, admnno):
             global add_rlist
             add_rlist, cid_list = True, []
             while add_rlist:
-                remove_college_ans = prompt(
-                    [
-                        {
-                            "type": "input",
-                            "name": "cid",
-                            "message": "Enter CollegeID of college to remove from watchlist",
-                        }
-                    ]
-                )
-                cid_list.append(int(remove_college_ans["cid"]))
+                
+                while True:
+                    remove_college_ans = prompt(
+                        [
+                            {
+                                "type": "input",
+                                "name": "cid",
+                                "message": "Enter CollegeID of college to remove from watchlist",
+                            }
+                        ]
+                    )
+                    try:
+                        cid_list.append(int(remove_college_ans["cid"]))
+                    except:
+                        console.print("[red]CollegeID not valid.[/]")
+                        continue
+                    cursor.execute(f"SELECT * FROM applications WHERE CollegeID = {remove_college_ans['cid']} AND AdmnNO = '{admnno}'")
+                    record = cursor.fetchone()
+                    if record == None:
+                        console.print("[red]College not in watchlist.[/]")
+                        continue
+                    break
                 more_college = prompt(
                     [
                         {
@@ -445,36 +465,46 @@ def student_dashboard(db, cursor, admnno):
             display_student_tables(db, cursor, admnno)
 
         elif crud_ops["opr"] == "Change the deadline of a college":
-
-            modify_deadline_ans = prompt(
-                [
-                    {
-                        "type": "input",
-                        "name": "cid",
-                        "message": "What's the CollegeID of the college you want to change dealdine of?",
-                    },
-                    {
-                        "type": "list",
-                        "name": "deadline",
-                        "message": "What's your college applcation deadline",
-                        "choices": [
-                            "November first-week (US_EARLY1)",
-                            "Mid-November (UK/US_EARLY2)",
-                            "November End (US_UCs)",
-                            "January first-week (UK/US_REGULAR)",
-                            "Indian Private Colleges (INDIA_PRIV)",
-                            "Not decided (ND)",
-                        ],
-                    },
-                ]
-            )
-            cid = int(modify_deadline_ans["cid"])
-            cursor.execute(
-                "select Submitted from applications where CollegeID={} and AdmnNO='{}';".format(
-                    cid, admnno
+            while True:
+                modify_deadline_ans = prompt(
+                    [
+                        {
+                            "type": "input",
+                            "name": "cid",
+                            "message": "What's the CollegeID of the college you want to change dealdine of?",
+                        },
+                        {
+                            "type": "list",
+                            "name": "deadline",
+                            "message": "What's your college applcation deadline",
+                            "choices": [
+                                "November first-week (US_EARLY1)",
+                                "Mid-November (UK/US_EARLY2)",
+                                "November End (US_UCs)",
+                                "January first-week (UK/US_REGULAR)",
+                                "Indian Private Colleges (INDIA_PRIV)",
+                                "Not decided (ND)",
+                            ],
+                        },
+                    ]
                 )
-            )
-            sstatus = cursor.fetchone()
+                try:
+                    cid = int(modify_deadline_ans["cid"])
+                except ValueError:
+                    console.print("[red]Invalid College ID.[/]")
+                    continue
+                cursor.execute(
+                    "select Submitted from applications where CollegeID={} and AdmnNO='{}';".format(
+                        cid, admnno
+                    )
+                )
+                
+                sstatus = cursor.fetchone()
+                if sstatus == None:
+                    console.print("[red]College not found[/]")
+                    continue
+                break
+
             try:
                 s = modify_deadline_ans["deadline"]
                 new_deadline = s[s.find("(") + 1 : s.find(")")]
@@ -484,29 +514,43 @@ def student_dashboard(db, cursor, admnno):
             display_student_tables(db, cursor, admnno)
 
         elif crud_ops["opr"] == "Change your application status for a college":
-            modify_deadline_ans = prompt(
-                [
-                    {
-                        "type": "input",
-                        "name": "cid",
-                        "message": "What's the CollegeID of the college you want to change status of?",
-                    },
-                    {
-                        "type": "confirm",
-                        "name": "status",
-                        "message": "Have you submitted your application to this college?",
-                        "default": True,
-                    },
-                ]
-            )
-            cid = int(modify_deadline_ans["cid"])
-            sstatus = int(modify_deadline_ans["status"])
-            cursor.execute(
-                "select Deadline from applications where CollegeID={} and AdmnNO='{}';".format(
-                    cid, admnno
+            while True:
+                modify_deadline_ans = prompt(
+                    [
+                        {
+                            "type": "input",
+                            "name": "cid",
+                            "message": "What's the CollegeID of the college you want to change status of?",
+                        },
+                        {
+                            "type": "confirm",
+                            "name": "status",
+                            "message": "Have you submitted your application to this college?",
+                            "default": True,
+                        },
+                    ]
                 )
-            )
-            deadline = cursor.fetchone()[0]
+                try:
+                    cid = int(modify_deadline_ans["cid"])
+                except ValueError:
+                    console.print("[red]Invalid College ID.[/]")
+                    continue
+                sstatus = int(modify_deadline_ans["status"])
+                cursor.execute(
+                    "select Deadline from applications where CollegeID={} and AdmnNO='{}';".format(
+                        cid, admnno
+                    )
+                )
+                
+                deadline = cursor.fetchone()
+                if deadline == None:
+                    console.print("[red]College not found[/]")
+                    continue
+                break
+            
+            deadline = deadline[0]
+            
+
             modify_application(
                 db, cursor, admnno, cid, deadline, sstatus, change_status=True
             )
@@ -563,12 +607,26 @@ def student_create_prompt(db, cursor, admnno, pswd_hash):
     }
 
     questions = prompts.get_student_questions()
-    answers = prompt(questions)
+
+    while True:
+        answers = prompt(questions)
+        if len(answers["full_name"]) > 255:
+            console.print("[bold red]Name too long.[/]")
+            continue
+        break
     # college prompt
 
     college_questions = prompts.get_college_questions()
     college_questions.insert(0, college_prompt)
-    canswers = prompt(college_questions)
+    while True:
+        canswers = prompt(college_questions)
+        try:
+            if len(canswers["new_college"]) > 255:
+                console.print("[bold red]College Name too long.[/]")
+                continue
+        except KeyError:
+            pass
+        break
     college_list = []
     college_toadd_list = []
     for c in canswers["colleges"]:
