@@ -137,7 +137,6 @@ def delete_applications(db, cursor, studID):
         cursor.execute(query)
         to_print = "[DELETE] DROP ROWS APPLICATION"
         db.commit()
-    # add handling if college already exists
     except mysql.Error as e:
         console.print("⚠️ Something Went Wrong :-(")
         to_print = f"[DB ERROR]: DELETING\nMessage: {e}"
@@ -145,6 +144,22 @@ def delete_applications(db, cursor, studID):
     with open(LOG_PATH, "a") as log_file:
         log_file.write(to_print + "\n")
 
+def delete_lors(db, cursor, studID):
+    console = rich.console.Console()
+    query = "delete from lors where AdmnNO='{}';".format(studID)
+    this_dir, this_filename = os.path.split(__file__)
+    LOG_PATH = os.path.join(this_dir, "logs", "logs.txt")
+    to_print = "[ERROR]: COULD NOT DELETE FROM LORS TABLE"
+    try:
+        cursor.execute(query)
+        to_print = "[DELETE] DROP ROWS LORS"
+        db.commit()
+    except mysql.Error as e:
+        console.print("⚠️ Something Went Wrong :-(")
+        to_print = f"[DB ERROR]: DELETING\nMessage: {e}"
+
+    with open(LOG_PATH, "a") as log_file:
+        log_file.write(to_print + "\n")
 
 def modify_application(
     db, cursor, studID, collegeID, deadline, sstatus, change_status=False
@@ -569,8 +584,9 @@ def student_dashboard(db, cursor, admnno):
             )
             if delete_confirm["delete"]:
                 cursor.execute("delete from students where AdmnNO='{}';".format(admnno))
-                delete_applications(db, cursor, admnno)
                 db.commit()
+                delete_applications(db, cursor, admnno)
+                delete_lors(db, cursor, admnno)
                 console.print(
                     "\n😔 We're sorry to see you go.\n\n[italic red]Your account was deleted.[/]",
                     justify="center",
