@@ -184,6 +184,15 @@ def get_existing_colleges(cursor):
         existing_choices.append({"name": college_t[0]})
     return existing_choices
 
+def get_new_colleges_add(cursor, admnno):
+    existing_choices = [
+        Separator("== New Colleges from DB (Not Applied To Yet) =="),
+    ]
+    cursor.execute("select CollegeName from colleges where CollegeID not in (select CollegeID from applications where AdmnNO='{}');".format(admnno))
+    output = cursor.fetchall()
+    for college_t in output:
+        existing_choices.append({"name": college_t[0]})
+    return existing_choices
 
 def get_college_id(cursor, cname):
     cursor.execute("select CollegeID from colleges where Name='{}';".format(cname))
@@ -295,8 +304,18 @@ def student_dashboard(db, cursor, admnno):
             global add
             add, college_list = True, []
             while add:
+                existing_choices = get_new_colleges_add(cursor, admnno)
+                college_prompt = {
+                    "type": "checkbox",
+                    "qmark": "🎓",
+                    "message": "Select or Add Colleges to your Watchlist",
+                    "name": "colleges",
+                    "choices": existing_choices,
+                }
+                p = prompts.get_college_questions()
+                p.insert(0, college_prompt)
                 while True:
-                    add_college_ans = prompt(prompts.get_college_questions())
+                    add_college_ans = prompt(p)
                     try:
                         if len(add_college_ans["new_college"]) > 255:
                             console.print("[bold red]College Name too long.[/]")
@@ -304,6 +323,11 @@ def student_dashboard(db, cursor, admnno):
                     except KeyError:
                         pass
                     break
+                for c in add_college_ans["colleges"]:
+                    if c != "Add it below!":
+                        cd = {}
+                        cd["ND"] = c
+                        college_list.append(cd)
                 try:
                     s = add_college_ans["deadline"]
                     cd = {}
