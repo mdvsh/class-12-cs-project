@@ -4,9 +4,7 @@
 
 An interactive Terminal User Interface wrapped around an International Admissions Dashboard for Counselor, Teachers, and Students.
 
-### Demo
-
-*coming soon*
+### [Demo](https://youtu.be/weHDGMlM00w)
 
 ### Prerequisites
 
